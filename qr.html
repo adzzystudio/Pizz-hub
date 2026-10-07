@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Table QR Codes</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+body{margin:0;font-family:system-ui,sans-serif;background:#f4f7f6;color:#1b2523}
+.ctl{padding:14px;display:grid;gap:8px;max-width:520px;margin:0 auto}
+label{font-size:13px;color:#66736f}
+input{padding:10px;border:1px solid #dfe6e3;border-radius:8px;font:inherit;width:100%}
+button{padding:12px;border:0;border-radius:8px;background:#0f4c45;color:#fff;font:inherit;font-weight:600}
+.sheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:12px}
+.card{background:#fff;border:2px solid #0f4c45;border-radius:14px;padding:14px;text-align:center;break-inside:avoid}
+.card h2{margin:0;font-size:20px}
+.card p{margin:2px 0 8px;font-size:13px;color:#66736f}
+.card svg{width:100%;height:auto;max-width:170px}
+.card b{display:block;font-size:22px;margin-top:6px}
+@media print{.ctl{display:none}body{background:#fff}}
+</style>
+</head>
+<body>
+<div class="ctl">
+  <label>Restaurant ka naam</label><input id="rn" value="Pizza Hub">
+  <label>Kitne tables?</label><input id="n" type="number" min="1" max="100" value="10">
+  <label>Menu ka link</label><input id="base">
+  <button id="go">QR codes banao</button>
+  <button id="pr" onclick="window.print()">Print / PDF save karo</button>
+</div>
+<div class="sheet" id="sheet"></div>
+<script>
+document.getElementById("base").value=location.origin+"/menu.html?table=";
+function make(){
+  var base=document.getElementById("base").value,n=Math.min(100,parseInt(document.getElementById("n").value,10)||1),name=document.getElementById("rn").value;
+  var out="";
+  for(var i=1;i<=n;i++){
+    var qr=qrcode(0,"M");qr.addData(base+i);qr.make();
+    out+='<div class="card"><h2>'+name.replace(/</g,"&lt;")+'</h2><p>Scan karo, menu dekho, order karo</p>'+qr.createSvgTag(6,0)+'<b>Table '+i+'</b></div>';
+  }
+  document.getElementById("sheet").innerHTML=out;
+}
+document.getElementById("go").onclick=make;
+make();
+</script>
+</body>
+</html>
