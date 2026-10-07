@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kitchen</title>
+<style>
+:root{--bg:#101716;--card:#18221f;--ink:#e8efed;--mute:#93a39e;--line:#2a3733;--new:#f2a33a;--prep:#3b82f6;--ready:#1f9d55}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,sans-serif}
+button,input{font:inherit}
+.login{max-width:340px;margin:12vh auto;padding:20px}
+.login h1{margin:0 0 16px}
+input{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.btn{width:100%;padding:12px;border:0;border-radius:10px;background:var(--new);color:#1b2523;font-weight:700;cursor:pointer}
+.err{color:#ff8a80;min-height:20px;font-size:14px}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg)}
+header h1{margin:0;font-size:20px}
+.cnt{color:var(--mute);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-top:5px solid var(--new);border-radius:12px;padding:14px}
+.card.preparing{border-top-color:var(--prep)}.card.ready{border-top-color:var(--ready)}
+.top{display:flex;justify-content:space-between;align-items:baseline}
+.tbl{font-size:24px;font-weight:800}
+.age{color:var(--mute);font-size:13px}
+ul{list-style:none;padding:0;margin:10px 0}
+li{padding:4px 0;font-size:17px}
+li b{color:var(--new)}
+.note{background:#2a2414;color:#ffd48a;border-radius:8px;padding:8px;font-size:14px;margin-bottom:10px}
+.act{padding:12px;width:100%;border:0;border-radius:10px;font-weight:700;cursor:pointer;color:#fff;background:var(--prep)}
+.card.preparing .act{background:var(--ready)}.card.ready .act{background:#555}
+.empty{color:var(--mute);text-align:center;padding:60px 16px}
+</style>
+</head>
+<body>
+<div class="login" id="login">
+  <h1>Kitchen login</h1>
+  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+  <div class="err" id="err"></div>
+  <button class="btn" id="go">Login</button>
+</div>
+<div id="app" hidden>
+  <header><h1>Kitchen orders</h1><span class="cnt" id="cnt"></span></header>
+  <div class="grid" id="grid"></div>
+</div>
+<script>
+var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
+var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
+var token=null,lastId=null,ctx=null,timer=null;
+var NEXT={"new":["preparing","Banana shuru karo"],"preparing":["ready","Ready hai"],"ready":["done","Serve ho gaya"]};
+function $(i){return document.getElementById(i)}
+function H(){return {"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json"}}
+
+$("go").onclick=function(){
+  try{ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
+  $("err").textContent="";
+  fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({email:$("em").value.trim(),password:$("pw").value})})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(!d.access_token)throw new Error();
+    token=d.access_token;$("login").hidden=true;$("app").hidden=false;load();timer=setInterval(load,4000);
+  }).catch(function(){$("err").textContent="Email ya password galat hai."});
+};
+function beep(){
+  if(!ctx)return;
+  [0,.25,.5].forEach(function(t){
+    var o=ctx.createOscillator(),g=ctx.createGain();
+    o.frequency.value=880;o.connect(g);g.connect(ctx.destination);
+    g.gain.setValueAtTime(.25,ctx.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.2);
+    o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.2);
+  });
+}
+function ago(ts){var m=Math.max(0,Math.round((Date.now()-new Date(ts))/60000));return m<1?"abhi":m+" min pehle"}
+function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+function load(){
+  fetch(SB_URL+"/rest/v1/orders?status=neq.done&select=*&order=created_at.asc",{headers:H()})
+  .then(function(r){
+    if(r.status===401){clearInterval(timer);$("app").hidden=true;$("login").hidden=false;$("err").textContent="Session khatam. Dobara login karein.";throw 0}
+    return r.json();
+  }).then(function(rows){
+    var maxId=rows.reduce(function(a,o){return Math.max(a,o.id)},0);
+    if(lastId!==null&&maxId>lastId)beep();
+    lastId=Math.max(lastId||0,maxId);
+    $("cnt").textContent=rows.length+" chal rahe hain";
+    $("grid").innerHTML=rows.length?rows.map(function(o){
+      var n=NEXT[o.status]||NEXT["new"];
+      return '<div class="card '+esc(o.status)+'"><div class="top"><span class="tbl">Table '+esc(o.table_no)+'</span><span class="age">'+ago(o.created_at)+'</span></div><ul>'+
+        (o.items||[]).map(function(i){return '<li><b>'+esc(i.qty)+'×</b> '+esc(i.name)+'</li>'}).join("")+'</ul>'+
+        (o.note?'<div class="note">'+esc(o.note)+'</div>':'')+
+        '<button class="act" data-id="'+o.id+'" data-st="'+n[0]+'">'+n[1]+'</button></div>';
+    }).join(""):'<div class="empty">Abhi koi order nahi. Naye order yahin dikhenge.</div>';
+  }).catch(function(){});
+}
+document.addEventListener("click",function(e){
+  var b=e.target.closest(".act");if(!b)return;
+  b.disabled=true;
+  fetch(SB_URL+"/rest/v1/orders?id=eq."+b.dataset.id,{method:"PATCH",headers:H(),body:JSON.stringify({status:b.dataset.st})}).then(load);
+});
+</script>
+</body>
+</html>

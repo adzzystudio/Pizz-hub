@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pizza Hub - Menu</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#f4f7f6;--card:#fff;--ink:#1b2523;--mute:#66736f;--brand:#0f4c45;--accent:#f2a33a;--line:#dfe6e3;--veg:#1f9d55;--nv:#c0392b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101716;--card:#18221f;--ink:#e8efed;--mute:#93a39e;--brand:#3fbfa8;--line:#2a3733}}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,sans-serif;padding-bottom:90px}
+header{background:var(--brand);color:#fff;padding:20px 16px 16px}
+header h1{margin:0;font-size:26px;font-weight:800}
+header p{margin:4px 0 0;opacity:.85;font-size:14px}
+.table{display:inline-block;margin-top:10px;background:var(--accent);color:#1b2523;font-weight:600;font-size:13px;padding:4px 10px;border-radius:99px}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:10px 16px;border-bottom:1px solid var(--line);z-index:5}
+.tabs,.filters{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.filters{margin-top:8px}
+button{font:inherit;cursor:pointer}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:6px 14px;border-radius:99px;white-space:nowrap;font-size:14px}
+.chip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+main{padding:12px 16px;max-width:640px;margin:0 auto}
+.item{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.pic{font-size:38px;width:68px;height:68px;border-radius:10px;background:var(--bg);display:grid;place-items:center;flex:none}
+.info{flex:1;min-width:0}
+.name{font-weight:600;display:flex;align-items:center;gap:6px}
+.dot{width:12px;height:12px;border:2px solid var(--veg);display:inline-grid;place-items:center;border-radius:3px;flex:none}
+.dot::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--veg)}
+.dot.nv{border-color:var(--nv)}.dot.nv::after{background:var(--nv)}
+.desc{color:var(--mute);font-size:13px;margin:2px 0 8px}
+.row{display:flex;justify-content:space-between;align-items:center}
+.price{font-weight:800}
+.add{border:1.5px solid var(--brand);color:var(--brand);background:transparent;border-radius:8px;padding:5px 18px;font-weight:600}
+.qty{display:flex;align-items:center;background:var(--brand);color:#fff;border-radius:8px}
+.qty button{background:none;border:0;color:inherit;width:32px;height:32px;font-size:18px}
+.qty span{min-width:20px;text-align:center;font-weight:600}
+.cartbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));background:var(--brand);color:#fff;border:0;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;font-weight:600;font-size:16px;max-width:616px;margin:0 auto}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;z-index:20}
+.sheet.open{display:flex}
+.panel{background:var(--card);width:100%;max-width:640px;margin:0 auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:85%;overflow:auto}
+.panel h2{margin:0 0 10px;font-size:20px}
+.line{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+textarea{width:100%;margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;background:var(--bg);color:var(--ink);resize:none}
+.total{display:flex;justify-content:space-between;font-weight:800;font-size:18px;margin:12px 0}
+.place{width:100%;background:var(--accent);color:#1b2523;border:0;border-radius:12px;padding:14px;font-weight:800;font-size:16px}
+.done{text-align:center;padding:20px 0}
+.done .big{font-size:56px}
+.empty{color:var(--mute);text-align:center;padding:30px 0}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Pizza Hub</h1>
+  <p>Scan karo, order karo, wait mat karo</p>
+  <span class="table" id="tbl"></span>
+</header>
+<div class="bar">
+  <div class="tabs" id="tabs"></div>
+  <div class="filters" id="filters"></div>
+</div>
+<main id="list"></main>
+<button class="cartbar" id="cartbar" hidden></button>
+
+<div class="sheet" id="sheet"><div class="panel" id="panel"></div></div>
+
+<script>
+// ---- SUPABASE SETTINGS ----
+var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
+var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
+var HDR={"apikey":SB_KEY,"Content-Type":"application/json"};
+var ICONS={Pizza:"🍕",Burger:"🍔",Sides:"🍟",Drinks:"🥤"};
+var MENU=[],cats=["Sab"];
+var state={cat:"Sab",type:"all",cart:{},note:""};
+var table=new URLSearchParams(location.search).get("table")||"1";
+document.getElementById("tbl").textContent="Table "+table;
+
+function rs(n){return "₹"+n}
+function $(id){return document.getElementById(id)}
+
+function renderBar(){
+  $("tabs").innerHTML=cats.map(function(c){return '<button class="chip'+(c===state.cat?' on':'')+'" data-cat="'+c+'">'+c+'</button>'}).join("");
+  var f=[["all","Sab"],["veg","Veg"],["nv","Non-veg"]];
+  $("filters").innerHTML=f.map(function(x){return '<button class="chip'+(x[0]===state.type?' on':'')+'" data-type="'+x[0]+'">'+x[1]+'</button>'}).join("");
+}
+function renderList(){
+  var items=MENU.filter(function(m){
+    return (state.cat==="Sab"||m.cat===state.cat)&&(state.type==="all"||(state.type==="veg")===m.veg);
+  });
+  $("list").innerHTML=items.length?items.map(function(m){
+    var q=state.cart[m.id]||0;
+    var ctl=q?'<div class="qty"><button data-dec="'+m.id+'" aria-label="Kam karo">−</button><span>'+q+'</span><button data-inc="'+m.id+'" aria-label="Badhao">+</button></div>'
+              :'<button class="add" data-inc="'+m.id+'">Add</button>';
+    return '<div class="item"><div class="pic">'+m.icon+'</div><div class="info"><div class="name"><span class="dot'+(m.veg?'':' nv')+'"></span>'+m.name+'</div><div class="desc">'+m.desc+'</div><div class="row"><span class="price">'+rs(m.price)+'</span>'+ctl+'</div></div></div>';
+  }).join(""):'<div class="empty">Is filter mein koi item nahi mila.</div>';
+}
+function totals(){
+  var n=0,t=0;
+  MENU.forEach(function(m){var q=state.cart[m.id]||0;n+=q;t+=q*m.price});
+  return {n:n,t:t};
+}
+function renderCartBar(){
+  var s=totals();
+  $("cartbar").hidden=!s.n;
+  $("cartbar").innerHTML='<span>'+s.n+' item</span><span>Cart dekho · '+rs(s.t)+'</span>';
+}
+function refresh(){renderList();renderCartBar();if($("sheet").classList.contains("open")&&state.view==="cart")renderCart()}
+function change(id,d){
+  var q=(state.cart[id]||0)+d;
+  if(q<=0)delete state.cart[id];else state.cart[id]=q;
+  refresh();
+}
+function renderCart(){
+  state.view="cart";
+  var s=totals();
+  if(!s.n){closeSheet();return}
+  var rows=MENU.filter(function(m){return state.cart[m.id]}).map(function(m){
+    return '<div class="line"><span>'+m.name+'</span><span class="qty"><button data-dec="'+m.id+'">−</button><span>'+state.cart[m.id]+'</span><button data-inc="'+m.id+'">+</button></span><b>'+rs(m.price*state.cart[m.id])+'</b></div>';
+  }).join("");
+  $("panel").innerHTML='<h2>Aapka order · Table '+table+'</h2>'+rows+
+   '<textarea id="note" rows="2" placeholder="Koi khaas baat? (jaise: kam teekha)">'+state.note.replace(/</g,"&lt;")+'</textarea>'+
+   '<div class="total"><span>Total</span><span>'+rs(s.t)+'</span></div>'+
+   '<button class="place" id="place">Order bhejo</button>';
+  $("note").oninput=function(e){state.note=e.target.value};
+  $("place").onclick=placeOrder;
+}
+function placeOrder(){
+  var btn=$("place");btn.disabled=true;btn.textContent="Bhej rahe hain...";
+  var order={table_no:table,note:state.note,total:totals().t,
+    items:MENU.filter(function(m){return state.cart[m.id]}).map(function(m){return {name:m.name,qty:state.cart[m.id],price:m.price}})};
+  fetch(SB_URL+"/rest/v1/orders",{method:"POST",headers:Object.assign({"Prefer":"return=minimal"},HDR),body:JSON.stringify(order)})
+  .then(function(r){
+    if(!r.ok)throw new Error(r.status);
+    state.view="done";
+    $("panel").innerHTML='<div class="done"><div class="big">✅</div><h2>Order mil gaya!</h2><p>Table '+table+' ka order kitchen ko bhej diya gaya hai.</p><button class="chip on" id="again">Aur order karo</button></div>';
+    $("again").onclick=closeSheet;
+    state.cart={};state.note="";refresh();
+  }).catch(function(){
+    btn.disabled=false;btn.textContent="Order bhejo";
+    alert("Order nahi gaya. Internet check karke dobara dabayein.");
+  });
+}
+function openSheet(){$("sheet").classList.add("open");renderCart()}
+function closeSheet(){$("sheet").classList.remove("open");state.view=""}
+
+document.addEventListener("click",function(e){
+  var t=e.target;
+  if(t.dataset.cat){state.cat=t.dataset.cat;renderBar();renderList()}
+  else if(t.dataset.type){state.type=t.dataset.type;renderBar();renderList()}
+  else if(t.dataset.inc)change(+t.dataset.inc,1);
+  else if(t.dataset.dec)change(+t.dataset.dec,-1);
+  else if(t===$("sheet"))closeSheet();
+});
+$("cartbar").onclick=openSheet;
+$("list").innerHTML='<div class="empty">Menu load ho raha hai...</div>';
+fetch(SB_URL+"/rest/v1/menu_items?select=*&available=eq.true&order=id",{headers:HDR})
+.then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
+.then(function(rows){
+  MENU=rows.map(function(m){return {id:m.id,cat:m.category,name:m.name,desc:m.description||"",price:m.price,veg:m.veg,icon:ICONS[m.category]||"🍽️"}});
+  cats=["Sab"].concat(MENU.map(function(m){return m.cat}).filter(function(c,i,a){return a.indexOf(c)===i}));
+  renderBar();refresh();
+}).catch(function(){
+  $("list").innerHTML='<div class="empty">Menu load nahi ho paya. Page dobara kholein.</div>';
+});
+</script>
+</body>
+</html>

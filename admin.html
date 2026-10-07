@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Owner Admin</title>
+<style>
+:root{--bg:#f4f7f6;--card:#fff;--ink:#1b2523;--mute:#66736f;--brand:#0f4c45;--accent:#f2a33a;--line:#dfe6e3;--bad:#c0392b}
+@media (prefers-color-scheme:dark){:root{--bg:#101716;--card:#18221f;--ink:#e8efed;--mute:#93a39e;--brand:#3fbfa8;--line:#2a3733}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,sans-serif}
+button,input,select{font:inherit}
+input,select{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.btn{padding:10px 16px;border:0;border-radius:8px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer}
+.btn.sm{padding:6px 10px;font-size:13px}.btn.red{background:var(--bad)}.btn.gray{background:var(--mute)}
+.login{max-width:340px;margin:12vh auto;padding:20px}
+.login input{margin-bottom:10px}
+.err{color:var(--bad);min-height:20px;font-size:14px}
+header{background:var(--brand);color:#fff;padding:16px}
+header h1{margin:0;font-size:20px}
+main{max-width:680px;margin:0 auto;padding:12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.stat b{display:block;font-size:24px}.stat span{color:var(--mute);font-size:13px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.box h2{margin:0 0 10px;font-size:17px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.form .full{grid-column:1/-1}
+.item{display:flex;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.item .n{flex:1;min-width:140px}.item .n small{display:block;color:var(--mute)}
+.item input{width:80px}
+.off{opacity:.5}
+</style>
+</head>
+<body>
+<div class="login" id="login">
+  <h1>Owner login</h1>
+  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+  <div class="err" id="err"></div>
+  <button class="btn" id="go" style="width:100%">Login</button>
+</div>
+<div id="app" hidden>
+  <header><h1>Owner admin</h1></header>
+  <main>
+    <div class="stats">
+      <div class="stat"><b id="sOrders">0</b><span>Aaj ke orders</span></div>
+      <div class="stat"><b id="sSales">₹0</b><span>Aaj ki bikri</span></div>
+    </div>
+    <div class="box">
+      <h2>Naya item jodein</h2>
+      <div class="form">
+        <input id="nName" class="full" placeholder="Item ka naam">
+        <input id="nCat" placeholder="Category (jaise Pizza)">
+        <input id="nPrice" type="number" inputmode="numeric" placeholder="Price ₹">
+        <input id="nDesc" class="full" placeholder="Chhota description">
+        <select id="nVeg"><option value="true">Veg</option><option value="false">Non-veg</option></select>
+        <button class="btn" id="add">Item jodein</button>
+      </div>
+    </div>
+    <div class="box"><h2>Menu</h2><div id="items"></div></div>
+  </main>
+</div>
+<script>
+var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
+var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
+var token=null,menu=[];
+function $(i){return document.getElementById(i)}
+function H(x){return Object.assign({"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json"},x||{})}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function api(path,method,body){
+  return fetch(SB_URL+"/rest/v1/"+path,{method:method||"GET",headers:H(method&&method!=="GET"?{"Prefer":"return=minimal"}:{}),body:body?JSON.stringify(body):undefined})
+  .then(function(r){
+    if(r.status===401){alert("Session khatam. Page refresh karke dobara login karein.");throw 0}
+    if(!r.ok)throw new Error(r.status);
+    return method&&method!=="GET"?null:r.json();
+  });
+}
+$("go").onclick=function(){
+  $("err").textContent="";
+  fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({email:$("em").value.trim(),password:$("pw").value})})
+  .then(function(r){return r.json()})
+  .then(function(d){if(!d.access_token)throw 0;token=d.access_token;$("login").hidden=true;$("app").hidden=false;loadMenu();loadStats()})
+  .catch(function(){$("err").textContent="Email ya password galat hai."});
+};
+function loadMenu(){
+  api("menu_items?select=*&order=category,id").then(function(rows){
+    menu=rows;
+    $("items").innerHTML=rows.length?rows.map(function(m){
+      return '<div class="item'+(m.available?'':' off')+'"><div class="n">'+esc(m.name)+(m.veg?' 🟢':' 🔴')+'<small>'+esc(m.category)+(m.available?'':' · band hai')+'</small></div>'+
+      '<input type="number" inputmode="numeric" value="'+m.price+'" id="p'+m.id+'" aria-label="Price">'+
+      '<button class="btn sm" data-save="'+m.id+'">Save</button>'+
+      '<button class="btn sm gray" data-tog="'+m.id+'">'+(m.available?'Band karo':'Chalu karo')+'</button>'+
+      '<button class="btn sm red" data-del="'+m.id+'">Hatao</button></div>';
+    }).join(""):'<p>Abhi koi item nahi.</p>';
+  });
+}
+function loadStats(){
+  var d=new Date();d.setHours(0,0,0,0);
+  api("orders?select=total&created_at=gte."+encodeURIComponent(d.toISOString())).then(function(rows){
+    $("sOrders").textContent=rows.length;
+    $("sSales").textContent="₹"+rows.reduce(function(a,o){return a+(o.total||0)},0);
+  });
+}
+$("add").onclick=function(){
+  var name=$("nName").value.trim(),price=parseInt($("nPrice").value,10),cat=$("nCat").value.trim();
+  if(!name||!cat||!(price>0)){alert("Naam, category aur price zaroor bharein.");return}
+  api("menu_items","POST",{name:name,category:cat,price:price,description:$("nDesc").value.trim(),veg:$("nVeg").value==="true"})
+  .then(function(){["nName","nCat","nPrice","nDesc"].forEach(function(i){$(i).value=""});loadMenu()})
+  .catch(function(){alert("Item nahi juda. Dobara try karein.")});
+};
+document.addEventListener("click",function(e){
+  var t=e.target,id;
+  if(id=t.dataset.save){
+    var p=parseInt($("p"+id).value,10);if(!(p>0)){alert("Sahi price daalein.");return}
+    api("menu_items?id=eq."+id,"PATCH",{price:p}).then(function(){t.textContent="Saved ✓";setTimeout(loadMenu,800)});
+  }else if(id=t.dataset.tog){
+    var m=menu.filter(function(x){return x.id==id})[0];
+    api("menu_items?id=eq."+id,"PATCH",{available:!m.available}).then(loadMenu);
+  }else if(id=t.dataset.del){
+    if(confirm("Is item ko hamesha ke liye hata dein?"))api("menu_items?id=eq."+id,"DELETE").then(loadMenu);
+  }
+});
+</script>
+</body>
+</html>
