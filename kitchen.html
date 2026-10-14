@@ -104,14 +104,40 @@ function startApp(){
   $("login").hidden=true;$("app").hidden=false;
   load();
   if(!timer)timer=setInterval(load,4000);
-  if("Notification" in window && Notification.permission==="granted") enablePush();
-  else if("Notification" in window && Notification.permission==="default") {}
-  if("Notification" in window && Notification.permission==="granted") $("notifBtn").textContent="🔔 Notification on ✓";
+  if("Notification" in window && Notification.permission==="granted"){
+    $("notifBtn").textContent="🔔 Notification on ✓";
+  }
 }
 function showLogin(msg){
   clearInterval(timer);timer=null;
   $("app").hidden=true;$("login").hidden=false;
   $("err").textContent=msg||"";
+}
+
+/* ---------- Sound unlock (pehle tap par) ---------- */
+function unlockSound(){
+  try{
+    ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();
+    if(ctx.state==="suspended")ctx.resume();
+  }catch(e){}
+}
+document.addEventListener("click",unlockSound);
+
+/* ---------- Tez alarm sound ---------- */
+function beep(){
+  if(!ctx)return;
+  var tones=[1000,1400,1000,1400,1000,1400];
+  tones.forEach(function(freq,i){
+    var t=i*.18;
+    var o=ctx.createOscillator(),g=ctx.createGain();
+    o.type="sawtooth";
+    o.frequency.value=freq;
+    o.connect(g);g.connect(ctx.destination);
+    g.gain.setValueAtTime(0,ctx.currentTime+t);
+    g.gain.linearRampToValueAtTime(.5,ctx.currentTime+t+.02);
+    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.16);
+    o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.17);
+  });
 }
 
 /* ---------- Push notification subscribe ---------- */
@@ -124,6 +150,7 @@ function urlB64ToUint8(b){
   return a;
 }
 function enablePush(){
+  unlockSound();
   if(!("Notification" in window)||!("PushManager" in window)){
     alert("Is phone par notification support nahi hai.");
     return Promise.resolve();
@@ -153,7 +180,7 @@ function enablePush(){
 
 /* ---------- Login ---------- */
 $("go").onclick=function(){
-  try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
+  unlockSound();
   $("err").textContent="";
   fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
     body:JSON.stringify({email:toEmail($("em").value),password:$("pw").value})})
@@ -165,15 +192,6 @@ $("go").onclick=function(){
   }).catch(function(){$("err").textContent="User ID ya password galat hai."});
 };
 
-function beep(){
-  if(!ctx)return;
-  [0,.25,.5].forEach(function(t){
-    var o=ctx.createOscillator(),g=ctx.createGain();
-    o.frequency.value=880;o.connect(g);g.connect(ctx.destination);
-    g.gain.setValueAtTime(.25,ctx.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.2);
-    o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.2);
-  });
-}
 function ago(ts){var m=Math.max(0,Math.round((Date.now()-new Date(ts))/60000));return m<1?"abhi":m+" min pehle"}
 function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
 
