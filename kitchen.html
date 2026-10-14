@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kitchen</title>
+<link rel="manifest" href="/manifest-kitchen.json">
+<meta name="theme-color" content="#101716">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <style>
 :root{--bg:#101716;--card:#18221f;--ink:#e8efed;--mute:#93a39e;--line:#2a3733;--new:#f2a33a;--prep:#3b82f6;--ready:#1f9d55}
 *{box-sizing:border-box}
@@ -14,9 +17,12 @@ button,input{font:inherit}
 input{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 .btn{width:100%;padding:12px;border:0;border-radius:10px;background:var(--new);color:#1b2523;font-weight:700;cursor:pointer}
 .err{color:#ff8a80;min-height:20px;font-size:14px}
-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg)}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5;gap:8px;flex-wrap:wrap}
 header h1{margin:0;font-size:20px}
+.right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cnt{color:var(--mute);font-size:14px}
+.out{background:none;border:1px solid var(--line);color:var(--mute);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
+.out:disabled{color:#1f9d55;border-color:#1f9d55}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:12px}
 .card{background:var(--card);border:1px solid var(--line);border-top:5px solid var(--new);border-radius:12px;padding:14px}
 .card.preparing{border-top-color:var(--prep)}.card.ready{border-top-color:var(--ready)}
@@ -35,34 +41,130 @@ li b{color:var(--new)}
 <body>
 <div class="login" id="login">
   <h1>Kitchen login</h1>
-  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="em" type="text" placeholder="User ID" autocomplete="username">
   <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
   <div class="err" id="err"></div>
   <button class="btn" id="go">Login</button>
 </div>
 <div id="app" hidden>
-  <header><h1>Kitchen orders</h1><span class="cnt" id="cnt"></span></header>
+  <header>
+    <h1>Kitchen orders</h1>
+    <div class="right">
+      <span class="cnt" id="cnt"></span>
+      <button class="out" id="notifBtn" onclick="enablePush()">🔔 Notification on karein</button>
+      <button class="out" onclick="logout()">Logout</button>
+    </div>
+  </header>
   <div class="grid" id="grid"></div>
 </div>
+
 <script>
 var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
 var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
+var VAPID_PUBLIC="BIk6i9KnrglUY_9vvRu4HpgsmoSuLipgK7-NZj4z1PKuWRiNLxfGZf23LdYUUCs_51NIHFnY8lH5kQ_QZXDPQPI";
+var SESSION_KEY="kitchenSession";
 var token=null,lastId=null,ctx=null,timer=null;
 var NEXT={"new":["preparing","Banana shuru karo"],"preparing":["ready","Ready hai"],"ready":["done","Serve ho gaya"]};
 function $(i){return document.getElementById(i)}
 function H(){return {"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json"}}
+function toEmail(u){
+  u=u.trim().toLowerCase();
+  return u.indexOf("@")>-1?u:u+"@pizzhub.app";
+}
 
+/* ---------- Session (login ek baar, refresh apne aap) ---------- */
+function saveSession(d){
+  var s={access_token:d.access_token,refresh_token:d.refresh_token,expires_at:Date.now()+(d.expires_in||3600)*1000-60000};
+  localStorage.setItem(SESSION_KEY,JSON.stringify(s));
+  token=s.access_token;
+}
+function loadSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||"null")}catch(e){return null}}
+function refreshSession(){
+  var s=loadSession();
+  if(!s||!s.refresh_token)return Promise.reject("auth");
+  return fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({refresh_token:s.refresh_token})})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(!d.access_token)throw "auth";
+    saveSession(d);
+    return token;
+  });
+}
+function ensureToken(){
+  var s=loadSession();
+  if(s&&s.expires_at>Date.now()){token=s.access_token;return Promise.resolve(token)}
+  return refreshSession();
+}
+function logout(){
+  localStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+function startApp(){
+  $("login").hidden=true;$("app").hidden=false;
+  load();
+  if(!timer)timer=setInterval(load,4000);
+  if("Notification" in window && Notification.permission==="granted") enablePush();
+  else if("Notification" in window && Notification.permission==="default") {}
+  if("Notification" in window && Notification.permission==="granted") $("notifBtn").textContent="🔔 Notification on ✓";
+}
+function showLogin(msg){
+  clearInterval(timer);timer=null;
+  $("app").hidden=true;$("login").hidden=false;
+  $("err").textContent=msg||"";
+}
+
+/* ---------- Push notification subscribe ---------- */
+function urlB64ToUint8(b){
+  var p="=".repeat((4-b.length%4)%4);
+  var s=(b+p).replace(/-/g,"+").replace(/_/g,"/");
+  var r=atob(s);
+  var a=new Uint8Array(r.length);
+  for(var i=0;i<r.length;i++)a[i]=r.charCodeAt(i);
+  return a;
+}
+function enablePush(){
+  if(!("Notification" in window)||!("PushManager" in window)){
+    alert("Is phone par notification support nahi hai.");
+    return Promise.resolve();
+  }
+  return Notification.requestPermission().then(function(perm){
+    if(perm!=="granted"){alert("Notification ki permission nahi mili. Browser settings se allow karein.");return null}
+    return navigator.serviceWorker.ready.then(function(reg){
+      return reg.pushManager.getSubscription().then(function(sub){
+        return sub||reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlB64ToUint8(VAPID_PUBLIC)});
+      });
+    }).then(function(sub){
+      var j=sub.toJSON();
+      return ensureToken().then(function(){
+        return fetch(SB_URL+"/rest/v1/push_subscriptions?on_conflict=endpoint",{method:"POST",
+          headers:Object.assign({"Prefer":"resolution=merge-duplicates,return=minimal"},H()),
+          body:JSON.stringify({endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,role:"kitchen"})});
+      });
+    }).then(function(r){
+      if(r&&r.ok){
+        $("notifBtn").textContent="🔔 Notification on ✓";
+      }else if(r){
+        alert("Notification save nahi hua. Dobara try karein.");
+      }
+    });
+  });
+}
+
+/* ---------- Login ---------- */
 $("go").onclick=function(){
-  try{ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
+  try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
   $("err").textContent="";
   fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
-    body:JSON.stringify({email:$("em").value.trim(),password:$("pw").value})})
+    body:JSON.stringify({email:toEmail($("em").value),password:$("pw").value})})
   .then(function(r){return r.json()})
   .then(function(d){
     if(!d.access_token)throw new Error();
-    token=d.access_token;$("login").hidden=true;$("app").hidden=false;load();timer=setInterval(load,4000);
-  }).catch(function(){$("err").textContent="Email ya password galat hai."});
+    saveSession(d);
+    startApp();
+  }).catch(function(){$("err").textContent="User ID ya password galat hai."});
 };
+
 function beep(){
   if(!ctx)return;
   [0,.25,.5].forEach(function(t){
@@ -74,10 +176,13 @@ function beep(){
 }
 function ago(ts){var m=Math.max(0,Math.round((Date.now()-new Date(ts))/60000));return m<1?"abhi":m+" min pehle"}
 function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+
+/* ---------- Orders ---------- */
 function load(){
-  fetch(SB_URL+"/rest/v1/orders?status=neq.done&select=*&order=created_at.asc",{headers:H()})
-  .then(function(r){
-    if(r.status===401){clearInterval(timer);$("app").hidden=true;$("login").hidden=false;$("err").textContent="Session khatam. Dobara login karein.";throw 0}
+  ensureToken().then(function(){
+    return fetch(SB_URL+"/rest/v1/orders?status=neq.done&select=*&order=created_at.asc",{headers:H()});
+  }).then(function(r){
+    if(r.status===401)throw "auth";
     return r.json();
   }).then(function(rows){
     var maxId=rows.reduce(function(a,o){return Math.max(a,o.id)},0);
@@ -91,13 +196,21 @@ function load(){
         (o.note?'<div class="note">'+esc(o.note)+'</div>':'')+
         '<button class="act" data-id="'+o.id+'" data-st="'+n[0]+'">'+n[1]+'</button></div>';
     }).join(""):'<div class="empty">Abhi koi order nahi. Naye order yahin dikhenge.</div>';
-  }).catch(function(){});
+  }).catch(function(e){
+    if(e==="auth")showLogin("Session khatam. Dobara login karein.");
+  });
 }
 document.addEventListener("click",function(e){
   var b=e.target.closest(".act");if(!b)return;
   b.disabled=true;
-  fetch(SB_URL+"/rest/v1/orders?id=eq."+b.dataset.id,{method:"PATCH",headers:H(),body:JSON.stringify({status:b.dataset.st})}).then(load);
+  ensureToken().then(function(){
+    return fetch(SB_URL+"/rest/v1/orders?id=eq."+b.dataset.id,{method:"PATCH",headers:H(),body:JSON.stringify({status:b.dataset.st})});
+  }).then(load).catch(function(){b.disabled=false});
 });
+
+/* ---------- Shuru ---------- */
+if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
+ensureToken().then(startApp).catch(function(){});
 </script>
 </body>
 </html>
