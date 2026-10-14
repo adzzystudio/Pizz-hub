@@ -23,6 +23,13 @@ button{font:inherit;cursor:pointer}
 .chip{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:6px 14px;border-radius:99px;white-space:nowrap;font-size:14px}
 .chip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
 main{padding:12px 16px;max-width:640px;margin:0 auto}
+.mystat{max-width:640px;margin:12px auto 0;padding:0 16px}
+.mybox{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mybox .lbl{font-weight:700}
+.mybox .sub{font-size:13px;color:var(--mute)}
+.mybox.ready{border-left-color:var(--veg)}
+.mybox.done{border-left-color:#555}
+.mybox button{background:none;border:1px solid var(--line);color:var(--mute);border-radius:8px;padding:4px 10px;font-size:13px}
 .item{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
 .pic{font-size:38px;width:68px;height:68px;border-radius:10px;background:var(--bg);display:grid;place-items:center;flex:none}
 .info{flex:1;min-width:0}
@@ -62,6 +69,7 @@ textarea{width:100%;margin-top:12px;border:1px solid var(--line);border-radius:1
   <div class="tabs" id="tabs"></div>
   <div class="filters" id="filters"></div>
 </div>
+<div class="mystat" id="mystat"></div>
 <main id="list"></main>
 <button class="cartbar" id="cartbar" hidden></button>
 
@@ -73,6 +81,7 @@ var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
 var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
 var HDR={"apikey":SB_KEY,"Content-Type":"application/json"};
 var ICONS={Pizza:"🍕",Burger:"🍔",Sides:"🍟",Drinks:"🥤"};
+var LABEL={"new":"Order mil gaya","preparing":"Bana rahe hain 🍳","ready":"Ready hai, aa rahe hain 🛎️","done":"Served ✅"};
 var MENU=[],cats=["Sab"];
 var state={cat:"Sab",type:"all",cart:{},note:""};
 var table=new URLSearchParams(location.search).get("table")||"1";
@@ -80,6 +89,10 @@ document.getElementById("tbl").textContent="Table "+table;
 
 function rs(n){return "₹"+n}
 function $(id){return document.getElementById(id)}
+function rpc(name,body){
+  return fetch(SB_URL+"/rest/v1/rpc/"+name,{method:"POST",headers:HDR,body:JSON.stringify(body)})
+    .then(function(r){if(!r.ok)throw new Error(r.status);return r.json()});
+}
 
 function renderBar(){
   $("tabs").innerHTML=cats.map(function(c){return '<button class="chip'+(c===state.cat?' on':'')+'" data-cat="'+c+'">'+c+'</button>'}).join("");
@@ -127,17 +140,19 @@ function renderCart(){
   $("note").oninput=function(e){state.note=e.target.value};
   $("place").onclick=placeOrder;
 }
+
+/* ---------- Order bhejna (server function se, ID milta hai) ---------- */
 function placeOrder(){
   var btn=$("place");btn.disabled=true;btn.textContent="Bhej rahe hain...";
-  var order={table_no:table,note:state.note,total:totals().t,
-    items:MENU.filter(function(m){return state.cart[m.id]}).map(function(m){return {name:m.name,qty:state.cart[m.id],price:m.price}})};
-  fetch(SB_URL+"/rest/v1/orders",{method:"POST",headers:Object.assign({"Prefer":"return=minimal"},HDR),body:JSON.stringify(order)})
-  .then(function(r){
-    if(!r.ok)throw new Error(r.status);
+  var items=MENU.filter(function(m){return state.cart[m.id]}).map(function(m){return {name:m.name,qty:state.cart[m.id],price:m.price}});
+  rpc("place_order",{p_table:String(table),p_note:state.note,p_total:totals().t,p_items:items})
+  .then(function(orderId){
+    saveMyOrder(orderId);
     state.view="done";
-    $("panel").innerHTML='<div class="done"><div class="big">✅</div><h2>Order mil gaya!</h2><p>Table '+table+' ka order kitchen ko bhej diya gaya hai.</p><button class="chip on" id="again">Aur order karo</button></div>';
+    $("panel").innerHTML='<div class="done"><div class="big">✅</div><h2>Order mil gaya!</h2><p>Table '+table+' ka order kitchen ko bhej diya gaya hai. Neeche status dekhte rahiye.</p><button class="chip on" id="again">Aur order karo</button></div>';
     $("again").onclick=closeSheet;
     state.cart={};state.note="";refresh();
+    pollStatus();
   }).catch(function(){
     btn.disabled=false;btn.textContent="Order bhejo";
     alert("Order nahi gaya. Internet check karke dobara dabayein.");
@@ -146,12 +161,49 @@ function placeOrder(){
 function openSheet(){$("sheet").classList.add("open");renderCart()}
 function closeSheet(){$("sheet").classList.remove("open");state.view=""}
 
+/* ---------- Order status (customer ke device par save hote hain) ---------- */
+function myOrders(){
+  try{return JSON.parse(localStorage.getItem("myOrders")||"[]")}catch(e){return []}
+}
+function saveOrders(list){
+  localStorage.setItem("myOrders",JSON.stringify(list.slice(-5)));
+}
+function saveMyOrder(id){
+  var list=myOrders();
+  list.push({id:id,table:String(table)});
+  saveOrders(list);
+}
+function pollStatus(){
+  var list=myOrders();
+  if(!list.length){renderMy([]);return}
+  Promise.all(list.map(function(o){
+    return rpc("get_order_status",{p_id:o.id})
+      .then(function(st){return {id:o.id,status:st}})
+      .catch(function(){return {id:o.id,status:null}});
+  })).then(function(res){
+    renderMy(res.filter(function(x){return x.status}));
+  });
+}
+function renderMy(res){
+  var box=$("mystat");
+  if(!res.length){box.innerHTML="";return}
+  box.innerHTML=res.map(function(x){
+    var st=x.status;
+    var dismiss=st==="done"?'<button data-dismiss="'+x.id+'">Hatao</button>':'';
+    return '<div class="mybox '+st+'"><div><div class="lbl">Order #'+x.id+'</div><div class="sub">'+(LABEL[st]||st)+'</div></div>'+dismiss+'</div>';
+  }).join("");
+}
+
 document.addEventListener("click",function(e){
   var t=e.target;
   if(t.dataset.cat){state.cat=t.dataset.cat;renderBar();renderList()}
   else if(t.dataset.type){state.type=t.dataset.type;renderBar();renderList()}
   else if(t.dataset.inc)change(+t.dataset.inc,1);
   else if(t.dataset.dec)change(+t.dataset.dec,-1);
+  else if(t.dataset.dismiss){
+    saveOrders(myOrders().filter(function(o){return o.id!=t.dataset.dismiss}));
+    pollStatus();
+  }
   else if(t===$("sheet"))closeSheet();
 });
 $("cartbar").onclick=openSheet;
@@ -165,6 +217,9 @@ fetch(SB_URL+"/rest/v1/menu_items?select=*&available=eq.true&order=id",{headers:
 }).catch(function(){
   $("list").innerHTML='<div class="empty">Menu load nahi ho paya. Page dobara kholein.</div>';
 });
+
+pollStatus();
+setInterval(pollStatus,5000);
 </script>
 </body>
 </html>
