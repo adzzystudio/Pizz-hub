@@ -130,6 +130,13 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
 .sumrow span{font-size:13px;color:var(--mute)}
 .topitems{font-size:15px}
 
+/* ---------- Table-wise bill ---------- */
+.tbills{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.tb{background:var(--bg);border-radius:12px;padding:12px;border-left:5px solid var(--accent)}
+.tb b{display:block;font-size:15px}
+.tb .amt{font-size:20px;font-weight:800;color:var(--brand);margin-top:2px}
+.tb small{color:var(--mute);font-size:13px}
+
 /* ---------- Bottom nav (mobile) ---------- */
 .bottom{display:none}
 
@@ -214,6 +221,10 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
           <div class="stat c"><b id="sTomorrow">0</b><span>Kal ke orders</span></div>
         </div>
         <div class="card">
+          <h3>Aaj ka table-wise bill</h3>
+          <div class="tbills" id="tblToday"></div>
+        </div>
+        <div class="card">
           <h3>Abhi chal rahe orders</h3>
           <div class="orders" id="dashList"></div>
         </div>
@@ -267,6 +278,8 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
             <div><b id="hAvg">₹0</b><span>Average bill</span></div>
           </div>
           <div class="topitems" id="hTop"></div>
+          <h3 style="margin-top:16px">Table-wise bill</h3>
+          <div class="tbills" id="tblHist"></div>
         </div>
         <div class="orders" id="hList"></div>
       </section>
@@ -343,6 +356,13 @@ function dayStart(d){var x=new Date(d);x.setHours(0,0,0,0);return x}
 function addDays(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x}
 function toEmail(u){u=u.trim().toLowerCase();return u.indexOf("@")>-1?u:u+"@pizzhub.app"}
 function stLabel(s){return {"new":"Naya","preparing":"Bana rahe","ready":"Ready","done":"Served"}[s]||s}
+
+function tableBill(rows){
+  var by={};
+  rows.forEach(function(o){var k=String(o.table_no);if(!by[k])by[k]={n:0,sum:0};by[k].n++;by[k].sum+=Number(o.total)||0});
+  var keys=Object.keys(by).sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true})});
+  return keys.length?keys.map(function(k){return '<div class="tb"><b>Table '+esc(k)+'</b><div class="amt">'+rs(by[k].sum)+'</div><small>'+by[k].n+' order</small></div>'}).join(""):'<p class="muted">Abhi koi record nahi.</p>';
+}
 
 /* ---------- Session ---------- */
 function saveSession(d){
@@ -437,6 +457,7 @@ function loadToday(){
     $("cToday").textContent=active.length;
     $("mToday").textContent=active.length;
     $("mToday").hidden=!active.length;
+    $("tblToday").innerHTML=tableBill(rows);
     $("dashList").innerHTML=active.length?active.map(orderCard).join(""):'<div class="empty">Abhi koi order chal nahi raha.</div>';
     var list=todayFilter?rows.filter(function(o){return (o.status||"new")===todayFilter}):rows;
     $("todayList").innerHTML=list.length?list.slice().reverse().map(orderCard).join(""):'<div class="empty">Is filter mein koi order nahi.</div>';
@@ -462,14 +483,12 @@ function orderCard(o){
   var st=o.status||"new";
   var when=new Date(o.created_at);
   var items=(o.items||[]).map(function(i){return '<li><span>'+esc(i.name)+'</span><b>'+esc(i.qty)+'×</b></li>'}).join("");
-  var n=NEXT[st];
-  var btn=n?'<button class="btn small" data-next="'+o.id+'" data-st="'+n[0]+'">'+n[1]+'</button>':'<span class="badge done">Complete</span>';
   return '<div class="ocard '+esc(st)+'">'+
     '<div class="ohead"><span class="tname">Table '+esc(o.table_no)+'</span><span class="badge '+esc(st)+'">'+stLabel(st)+'</span></div>'+
     '<div class="ometa">#'+o.id+' · '+hm(when)+(o.scheduled_for?' · Pre-order '+esc(o.scheduled_for):'')+'</div>'+
     '<ul class="oitems">'+items+'</ul>'+
     (o.note?'<div class="onote">Note: '+esc(o.note)+'</div>':'')+
-    '<div class="ofoot"><span class="total">'+rs(o.total)+'</span>'+btn+'</div>'+
+    '<div class="ofoot"><span class="total">'+rs(o.total)+'</span></div>'+
     '</div>';
 }
 
@@ -499,6 +518,7 @@ function loadHistory(){
     rows.forEach(function(o){(o.items||[]).forEach(function(i){counts[i.name]=(counts[i.name]||0)+(Number(i.qty)||1)})});
     var top=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a]}).slice(0,3);
     $("hTop").innerHTML=top.length?"<b>Sabse zyada bika:</b> "+top.map(function(n){return esc(n)+" ("+counts[n]+")"}).join(" · "):"";
+    $("tblHist").innerHTML=tableBill(rows);
     $("hList").innerHTML=rows.length?rows.map(orderCard).join(""):'<div class="empty">Is date range mein koi order nahi.</div>';
   }).catch(function(){$("hList").innerHTML='<div class="empty">History load nahi hui.</div>'});
 }
