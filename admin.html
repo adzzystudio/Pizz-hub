@@ -147,6 +147,11 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
 .tile.served .amt{color:var(--ready)}
 .tile.active{background:var(--accent);border-color:#d9861a;color:#1b2523;animation:pulse 1.4s ease-in-out infinite}
 .tile.active .amt,.tile.active small{color:#1b2523}
+.tile.pay{background:var(--brand);border-color:var(--brand);color:#fff}
+.tile.pay .amt,.tile.pay small{color:#fff}
+.tile.pay{animation:pulse2 1.4s ease-in-out infinite}
+@keyframes pulse2{0%,100%{box-shadow:0 0 0 0 rgba(15,76,69,.6)}50%{box-shadow:0 0 0 8px rgba(15,76,69,0)}}
+.warn{background:#fff3e0;color:#a35f00;border-radius:10px;padding:8px 10px;font-size:14px;margin-bottom:10px}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(242,163,58,.7)}50%{box-shadow:0 0 0 8px rgba(242,163,58,0)}}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
 .modal.show{display:flex}
@@ -222,6 +227,7 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
     <button class="nav-btn" data-go="today"><span class="ic">🍽️</span>Aaj ke orders<span class="count" id="cToday">0</span></button>
     <button class="nav-btn" data-go="tomorrow"><span class="ic">📅</span>Kal ke orders<span class="count" id="cTomorrow">0</span></button>
     <button class="nav-btn" data-go="history"><span class="ic">🗂️</span>History</button>
+    <button class="nav-btn" data-go="report"><span class="ic">💰</span>Sale report</button>
     <button class="nav-btn" data-go="menu"><span class="ic">📋</span>Menu aur stock</button>
     <button class="nav-btn" data-go="settings"><span class="ic">⚙️</span>Settings</button>
     <div class="side-foot">
@@ -244,13 +250,13 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
       <section class="page show" id="p-dash">
         <div class="stats">
           <div class="stat"><b id="sOrders">0</b><span>Aaj ke orders</span></div>
-          <div class="stat a"><b id="sSales">₹0</b><span>Aaj ki bikri</span></div>
+          <div class="stat a"><b id="sSales">₹0</b><span>Aaj ki bikri (paid)</span></div>
           <div class="stat b"><b id="sActive">0</b><span>Abhi chal rahe</span></div>
           <div class="stat c"><b id="sTomorrow">0</b><span>Kal ke orders</span></div>
         </div>
         <div class="card">
           <h3>Tables</h3>
-          <p class="muted" style="margin-bottom:12px">Naye order wali table orange ho jati hai. Table par tap karke items aur bill dekhein.</p>
+          <p class="muted" style="margin-bottom:12px">Naya order aate hi table orange ho jati hai. Sab serve ho jaye to hari ho jati hai (payment baaki). Table par tap karke items, price aur bill dekhein, aur payment aane par Paid dabayein.</p>
           <div class="tiles" id="tblToday"></div>
         </div>
         <div class="card">
@@ -313,6 +319,25 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
         <div class="orders" id="hList"></div>
       </section>
 
+      <!-- SALE REPORT -->
+      <section class="page" id="p-report">
+        <div class="card">
+          <h3>Sale report (paid tables)</h3>
+          <div class="filters">
+            <label><span>Se</span><input id="rFrom" type="date"></label>
+            <label><span>Tak</span><input id="rTo" type="date"></label>
+            <button class="btn block" onclick="loadReport()">Dikhayein</button>
+          </div>
+          <div class="sumrow">
+            <div><b id="rCount">0</b><span>Payments</span></div>
+            <div><b id="rTotal">₹0</b><span>Kul bikri</span></div>
+            <div><b id="rAvg">₹0</b><span>Average bill</span></div>
+          </div>
+          <div class="topitems" id="rTop"></div>
+        </div>
+        <div class="orders" id="rList"></div>
+      </section>
+
       <!-- MENU -->
       <section class="page" id="p-menu">
         <div class="card">
@@ -363,6 +388,7 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
   <button data-go="today"><span class="ic">🍽️</span>Aaj<span class="count" id="mToday" hidden>0</span></button>
   <button data-go="tomorrow"><span class="ic">📅</span>Kal</button>
   <button data-go="history"><span class="ic">🗂️</span>History</button>
+  <button data-go="report"><span class="ic">💰</span>Report</button>
   <button data-go="menu"><span class="ic">📋</span>Menu</button>
   <button data-go="settings"><span class="ic">⚙️</span>Settings</button>
 </nav>
@@ -381,7 +407,7 @@ var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
 var SESSION_KEY="adminSession";
 var token=null,menu=[],todayRows=[],historyRows=[],currentPage="dash",todayFilter="",shopOpen=true;
 var NEXT={"new":["preparing","Banana shuru karo"],"preparing":["ready","Ready hai"],"ready":["done","Served"]};
-var TITLES={dash:"Dashboard",today:"Aaj ke orders",tomorrow:"Kal ke orders",history:"History",menu:"Menu aur stock",settings:"Settings"};
+var TITLES={report:"Sale report",dash:"Dashboard",today:"Aaj ke orders",tomorrow:"Kal ke orders",history:"History",menu:"Menu aur stock",settings:"Settings"};
 
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
@@ -394,24 +420,18 @@ function addDays(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x}
 function toEmail(u){u=u.trim().toLowerCase();return u.indexOf("@")>-1?u:u+"@pizzhub.app"}
 function stLabel(s){return {"new":"Naya","preparing":"Bana rahe","ready":"Ready","done":"Served"}[s]||s}
 
-var TABLE_COUNT=12,openTbl=null;
-function tableTiles(rows){
-  var by={};
-  rows.forEach(function(o){var k=String(o.table_no);(by[k]=by[k]||[]).push(o)});
-  var keys=[];for(var i=1;i<=TABLE_COUNT;i++)keys.push(String(i));
-  Object.keys(by).forEach(function(k){if(keys.indexOf(k)<0)keys.push(k)});
-  return keys.map(function(k){
-    var list=by[k]||[];
-    var act=list.filter(function(o){return (o.status||"new")!=="done"});
-    var sum=list.reduce(function(a,o){return a+(Number(o.total)||0)},0);
-    var cls=act.length?" active":(list.length?" served":"");
-    var sub=act.length?act.length+" order chal rahe":(list.length?"Served ✓":"Khali");
-    return '<button class="tile'+cls+'" data-tbl="'+esc(k)+'"><b>Table '+esc(k)+'</b><span class="amt">'+(list.length?rs(sum):"—")+'</span><small>'+sub+'</small></button>';
-  }).join("");
-}
-function openTable(k){openTbl=k;renderTable();$("tmodal").classList.add("show")}
-function closeTable(){openTbl=null;$("tmodal").classList.remove("show")}
+var TABLE_COUNT=12,openTbl=null,liveRows=[],lastLiveId=null,actx=null;
 var menuPrice={};
+document.addEventListener("click",function(){if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}});
+function beep(){
+  if(!actx)return;
+  [0,.25,.5].forEach(function(t){
+    var o=actx.createOscillator(),g=actx.createGain();
+    o.frequency.value=880;o.connect(g);g.connect(actx.destination);
+    g.gain.setValueAtTime(.25,actx.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+t+.2);
+    o.start(actx.currentTime+t);o.stop(actx.currentTime+t+.2);
+  });
+}
 function loadPrices(){
   api("menu_items?select=name,price").then(function(rows){
     if(!rows)return;
@@ -424,8 +444,7 @@ function unitPrice(i){
   var k=String(i.name).trim().toLowerCase();
   return menuPrice.hasOwnProperty(k)?menuPrice[k]:null;
 }
-function renderTable(){
-  var list=todayRows.filter(function(o){return String(o.table_no)===openTbl});
+function aggregate(list){
   var lines={},order=[],cnt=0,sum=0,notes=[];
   list.forEach(function(o){
     sum+=Number(o.total)||0;
@@ -436,16 +455,101 @@ function renderTable(){
       lines[key].qty+=q;cnt+=q;
     });
   });
+  return {lines:order.map(function(k){return lines[k]}),cnt:cnt,sum:sum,notes:notes};
+}
+function lineHtml(l){
+  return '<li><span>'+esc(l.name)+'</span><span class="amt">'+(l.price==null?"—":rs(l.price*l.qty))+'</span><small>'+(l.price==null?"price nahi mila":rs(l.price))+' × '+l.qty+'</small></li>';
+}
+function tableTiles(){
+  var by={};
+  liveRows.forEach(function(o){var k=String(o.table_no);(by[k]=by[k]||[]).push(o)});
+  var keys=[];for(var i=1;i<=TABLE_COUNT;i++)keys.push(String(i));
+  Object.keys(by).forEach(function(k){if(keys.indexOf(k)<0)keys.push(k)});
+  return keys.map(function(k){
+    var list=by[k]||[];
+    if(!list.length)return '<button class="tile" data-tbl="'+esc(k)+'"><b>Table '+esc(k)+'</b><span class="amt">—</span><small>Khali</small></button>';
+    var pending=list.filter(function(o){return (o.status||"new")!=="done"}).length;
+    var sum=list.reduce(function(a,o){return a+(Number(o.total)||0)},0);
+    var cls=pending?"active":"pay";
+    var sub=pending?pending+" order chal rahe":"Payment baaki";
+    return '<button class="tile '+cls+'" data-tbl="'+esc(k)+'"><b>Table '+esc(k)+'</b><span class="amt">'+rs(sum)+'</span><small>'+sub+'</small></button>';
+  }).join("");
+}
+function loadLive(){
+  api("orders?select=*&paid=eq.false&order=created_at.asc").then(function(rows){
+    if(!rows)return;
+    liveRows=rows;
+    var maxId=rows.reduce(function(a,o){return Math.max(a,o.id)},0);
+    if(lastLiveId!==null&&maxId>lastLiveId)beep();
+    lastLiveId=Math.max(lastLiveId||0,maxId);
+    $("tblToday").innerHTML=tableTiles();
+    if(openTbl!==null)renderTable();
+  }).catch(function(){
+    $("tblToday").innerHTML='<p class="muted">Live tables load nahi hui. Supabase mein paid column wala SQL chalayein.</p>';
+  });
+}
+function openTable(k){openTbl=k;renderTable();$("tmodal").classList.add("show")}
+function closeTable(){openTbl=null;$("tmodal").classList.remove("show")}
+function tableOrders(){return liveRows.filter(function(o){return String(o.table_no)===openTbl})}
+function renderTable(){
+  var list=tableOrders();
   $("tmTitle").textContent="Table "+openTbl;
-  $("tmBody").innerHTML=list.length
-    ? '<div class="mstats"><div><b>'+cnt+'</b><span>Items</span></div><div><b>'+list.length+'</b><span>Orders</span></div><div class="bigbill"><b>'+rs(sum)+'</b><span>Total bill</span></div></div>'+
-      '<ul class="mlist">'+order.map(function(k){
-        var l=lines[k];
-        return '<li><span>'+esc(l.name)+'</span><span class="amt">'+(l.price==null?"—":rs(l.price*l.qty))+'</span><small>'+(l.price==null?"price nahi mila":rs(l.price))+' × '+l.qty+'</small></li>';
-      }).join("")+'</ul>'+
-      notes.map(function(n){return '<div class="mnote">Note: '+esc(n)+'</div>'}).join("")+
-      '<p class="muted">Ye record aapke History page mein bhi save rehta hai.</p>'
-    : '<p class="muted">Aaj is table se koi order nahi aaya.</p>';
+  if(!list.length){$("tmBody").innerHTML='<p class="muted">Is table par abhi koi pending bill nahi hai.</p>';return}
+  var a=aggregate(list);
+  var pending=list.filter(function(o){return (o.status||"new")!=="done"}).length;
+  $("tmBody").innerHTML=
+    '<div class="mstats"><div><b>'+a.cnt+'</b><span>Items</span></div><div><b>'+list.length+'</b><span>Orders</span></div><div class="bigbill"><b>'+rs(a.sum)+'</b><span>Total bill</span></div></div>'+
+    (pending?'<div class="warn">'+pending+' order abhi serve nahi hue.</div>':'')+
+    '<ul class="mlist">'+a.lines.map(lineHtml).join("")+'</ul>'+
+    a.notes.map(function(n){return '<div class="mnote">Note: '+esc(n)+'</div>'}).join("")+
+    '<button class="btn block" data-pay="1">Payment mil gaya ✓ (Paid)</button>';
+}
+function payTable(){
+  var list=tableOrders();
+  if(!list.length)return;
+  var a=aggregate(list);
+  var pending=list.filter(function(o){return (o.status||"new")!=="done"}).length;
+  var msg="Table "+openTbl+" ka "+rs(a.sum)+" payment mil gaya?"+(pending?"\n("+pending+" order abhi serve nahi hue.)":"")+"\n\nPaid dabane par table hat jayegi aur record sale report mein chala jayega.";
+  if(!confirm(msg))return;
+  var ids=list.map(function(o){return o.id});
+  api("orders?id=in.("+ids.join(",")+")","PATCH",{paid:true,paid_at:new Date().toISOString()})
+  .then(function(){closeTable();loadLive();loadToday()})
+  .catch(function(){alert("Paid save nahi hua. Dobara try karein.")});
+}
+
+/* ---------- Sale report ---------- */
+function loadReport(){
+  var from=$("rFrom").value,to=$("rTo").value;
+  if(!from||!to){alert("Dono dates bharein.");return}
+  var start=new Date(from+"T00:00:00");
+  var end=new Date(to+"T00:00:00");end.setDate(end.getDate()+1);
+  var q="orders?select=*&paid=eq.true&order=paid_at.desc&limit=1000"+
+        "&paid_at=gte."+encodeURIComponent(start.toISOString())+
+        "&paid_at=lt."+encodeURIComponent(end.toISOString());
+  api(q).then(function(rows){
+    if(!rows)return;
+    var groups={},order=[],total=0,counts={};
+    rows.forEach(function(o){
+      var k=o.table_no+"|"+o.paid_at;
+      if(!groups[k]){groups[k]={table:o.table_no,paid_at:o.paid_at,orders:[]};order.push(k)}
+      groups[k].orders.push(o);
+      total+=Number(o.total)||0;
+      (o.items||[]).forEach(function(i){counts[i.name]=(counts[i.name]||0)+(Number(i.qty)||1)});
+    });
+    $("rCount").textContent=order.length;
+    $("rTotal").textContent=rs(total);
+    $("rAvg").textContent=rs(order.length?total/order.length:0);
+    var top=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a]}).slice(0,3);
+    $("rTop").innerHTML=top.length?"<b>Sabse zyada bika:</b> "+top.map(function(n){return esc(n)+" ("+counts[n]+")"}).join(" · "):"";
+    $("rList").innerHTML=order.length?order.map(function(k){
+      var g=groups[k],a=aggregate(g.orders),d=new Date(g.paid_at);
+      var when=(from===to?"":ymd(d)+" · ")+hm(d);
+      return '<div class="ocard done"><div class="ohead"><span class="tname">Table '+esc(g.table)+'</span><span class="badge ready">Paid</span></div>'+
+        '<div class="ometa">'+when+' · '+a.cnt+' items</div>'+
+        '<ul class="oitems">'+a.lines.map(lineHtml).join("")+'</ul>'+
+        '<div class="ofoot"><span class="total">'+rs(a.sum)+'</span></div></div>';
+    }).join(""):'<div class="empty">Is date range mein koi paid record nahi.</div>';
+  }).catch(function(){$("rList").innerHTML='<div class="empty">Report load nahi hui. Supabase mein paid column wala SQL chalayein.</div>'});
 }
 function tableBill(rows){
   var by={};
@@ -525,7 +629,8 @@ function go(page){
   refreshCurrent();
 }
 function refreshCurrent(){
-  if(currentPage==="dash"||currentPage==="today")loadToday();
+  if(currentPage==="dash"||currentPage==="today"){loadToday();loadLive()}
+  if(currentPage==="report")loadReport();
   if(currentPage==="tomorrow")loadTomorrow();
   if(currentPage==="history")loadHistory();
   if(currentPage==="menu")loadMenu();
@@ -540,7 +645,7 @@ function loadToday(){
   .then(function(rows){
     if(!rows)return;
     todayRows=rows;
-    var total=rows.reduce(function(a,o){return a+(Number(o.total)||0)},0);
+    var total=rows.filter(function(o){return o.paid}).reduce(function(a,o){return a+(Number(o.total)||0)},0);
     var active=rows.filter(function(o){return o.status!=="done"});
     $("sOrders").textContent=rows.length;
     $("sSales").textContent=rs(total);
@@ -548,8 +653,6 @@ function loadToday(){
     $("cToday").textContent=active.length;
     $("mToday").textContent=active.length;
     $("mToday").hidden=!active.length;
-    $("tblToday").innerHTML=tableTiles(rows);
-    if(openTbl!==null)renderTable();
     $("dashList").innerHTML=active.length?active.map(orderCard).join(""):'<div class="empty">Abhi koi order chal nahi raha.</div>';
     var list=todayFilter?rows.filter(function(o){return (o.status||"new")===todayFilter}):rows;
     $("todayList").innerHTML=list.length?list.slice().reverse().map(orderCard).join(""):'<div class="empty">Is filter mein koi order nahi.</div>';
@@ -588,6 +691,8 @@ function orderCard(o){
 function setDefaultDates(){
   $("hFrom").value=ymd(addDays(new Date(),-6));
   $("hTo").value=ymd(new Date());
+  $("rFrom").value=ymd(new Date());
+  $("rTo").value=ymd(new Date());
 }
 function loadHistory(){
   var from=$("hFrom").value,to=$("hTo").value;
@@ -683,6 +788,7 @@ document.addEventListener("click",function(e){
   if(!t)return;
   if(t.dataset.tbl){openTable(t.dataset.tbl);return}
   if(t.dataset.close){closeTable();return}
+  if(t.dataset.pay){payTable();return}
   if(t.dataset.go){go(t.dataset.go);return}
   if(t.dataset.next){
     t.disabled=true;
@@ -713,6 +819,11 @@ $("tmodal").onclick=function(e){if(e.target===this)closeTable()};
 setInterval(function(){
   if(token&&$("app").classList.contains("show"))refreshCurrent();
 },15000);
+
+/* ---------- Live tables (har 5 second) ---------- */
+setInterval(function(){
+  if(token&&$("app").classList.contains("show")&&(currentPage==="dash"||currentPage==="today"))loadLive();
+},5000);
 
 /* ---------- Shuru ---------- */
 if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
