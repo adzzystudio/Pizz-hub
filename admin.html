@@ -3,140 +3,348 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Owner Admin</title>
+<title>Pizza Hub - Owner Admin</title>
 <link rel="manifest" href="/manifest-admin.json">
 <meta name="theme-color" content="#0f4c45">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <style>
-:root{--bg:#f4f7f6;--card:#fff;--ink:#1b2523;--mute:#66736f;--brand:#0f4c45;--accent:#f2a33a;--line:#dfe6e3;--bad:#c0392b;--ok:#1f9d55}
-@media (prefers-color-scheme:dark){:root{--bg:#101716;--card:#18221f;--ink:#e8efed;--mute:#93a39e;--brand:#3fbfa8;--line:#2a3733}}
+:root{
+  --brand:#0f4c45; --brand-2:#166b60; --accent:#f2a33a;
+  --bg:#f3f6f5; --card:#ffffff; --ink:#1b2523; --mute:#6b7a76; --line:#e2e9e6;
+  --new:#f2a33a; --prep:#3b82f6; --ready:#1f9d55; --done:#7b8785; --bad:#c0392b;
+  --radius:14px; --shadow:0 2px 10px rgba(15,76,69,.08);
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,sans-serif}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.4}
 button,input,select{font:inherit}
-input,select{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
-.btn{padding:10px 16px;border:0;border-radius:8px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer}
-.btn.sm{padding:6px 10px;font-size:13px}.btn.red{background:var(--bad)}.btn.gray{background:var(--mute)}
-.btn.full{width:100%}
-.login{max-width:340px;margin:12vh auto;padding:20px}
-.login input{margin-bottom:10px}
-.err{color:var(--bad);min-height:20px;font-size:14px}
-header{background:var(--brand);color:#fff;padding:16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-header h1{margin:0;font-size:20px}
-.out{background:none;border:1px solid #ffffff88;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
-main{max-width:720px;margin:0 auto;padding:12px}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
-.stat b{display:block;font-size:24px}.stat span{color:var(--mute);font-size:13px}
-.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
-.box h2{margin:0 0 10px;font-size:17px}
-.form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.form .full{grid-column:1/-1}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.item{display:flex;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
-.item .n{flex:1;min-width:140px}.item .n small{display:block;color:var(--mute)}
-.item input{width:80px}
-.off{opacity:.5}
-.ord{border-top:1px solid var(--line);padding:10px 0}
-.ord .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.ord .meta{color:var(--mute);font-size:13px}
-.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:700;background:var(--line)}
-.badge.done{background:#e8f5e9;color:var(--ok)}
-.badge.ready{background:#fff4df;color:#9a6200}
-.badge.preparing{background:#e3eefc;color:#1d4fa0}
-.ord ul{margin:6px 0 0;padding-left:18px;font-size:14px}
-.top3{font-size:14px;margin:8px 0}
-.summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0}
-.summary div{background:var(--bg);border-radius:8px;padding:10px;text-align:center}
-.summary b{display:block;font-size:20px}
-.summary span{font-size:12px;color:var(--mute)}
+button{cursor:pointer}
+
+/* ---------- Login ---------- */
+.login-wrap{min-height:100%;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,var(--brand),var(--brand-2))}
+.login-card{background:var(--card);width:100%;max-width:380px;border-radius:20px;padding:28px 24px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.login-card h1{margin:0 0 4px;font-size:24px;color:var(--brand)}
+.login-card p{margin:0 0 20px;color:var(--mute)}
+.field{display:block;margin-bottom:14px}
+.field span{display:block;font-size:14px;color:var(--mute);margin-bottom:6px;font-weight:600}
+input,select{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-size:16px}
+input:focus,select:focus{outline:2px solid var(--accent);border-color:transparent}
+.err{color:var(--bad);min-height:22px;font-size:14px;margin-bottom:6px}
+
+/* ---------- Buttons ---------- */
+.btn{border:0;border-radius:12px;padding:12px 18px;background:var(--brand);color:#fff;font-weight:700;font-size:15px}
+.btn:hover{background:var(--brand-2)}
+.btn.accent{background:var(--accent);color:#1b2523}
+.btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--line)}
+.btn.danger{background:var(--bad)}
+.btn.small{padding:8px 12px;font-size:14px;border-radius:10px}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5}
+
+/* ---------- Shell ---------- */
+.app{display:none;min-height:100%}
+.app.show{display:grid;grid-template-columns:250px 1fr}
+.sidebar{background:var(--brand);color:#fff;padding:22px 16px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 20px}
+.logo{width:42px;height:42px;border-radius:12px;background:var(--accent);color:#1b2523;display:grid;place-items:center;font-weight:800}
+.brand b{display:block;font-size:17px}
+.brand small{opacity:.75;font-size:13px}
+.nav-btn{display:flex;align-items:center;gap:12px;background:transparent;border:0;color:#d7ebe7;padding:12px 12px;border-radius:12px;text-align:left;font-size:16px;font-weight:600;width:100%}
+.nav-btn:hover{background:rgba(255,255,255,.08)}
+.nav-btn.active{background:#fff;color:var(--brand)}
+.nav-btn .ic{font-size:18px;width:24px;text-align:center}
+.nav-btn .count{margin-left:auto;background:var(--accent);color:#1b2523;font-size:12px;font-weight:800;padding:2px 8px;border-radius:99px}
+.side-foot{margin-top:auto}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:5}
+.topbar h2{margin:0;font-size:21px}
+.topbar .sub{color:var(--mute);font-size:14px}
+.content{padding:20px 22px 110px;max-width:1100px;width:100%}
+.page{display:none}
+.page.show{display:block}
+
+/* ---------- Cards & stats ---------- */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+.card h3{margin:0 0 12px;font-size:18px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.stat{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;border-left:5px solid var(--brand)}
+.stat.a{border-left-color:var(--accent)}
+.stat.b{border-left-color:var(--prep)}
+.stat.c{border-left-color:var(--ready)}
+.stat b{display:block;font-size:26px}
+.stat span{color:var(--mute);font-size:14px}
+.muted{color:var(--mute);font-size:14px;margin:0}
+
+/* ---------- Order cards ---------- */
+.orders{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.ocard{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;border-top:5px solid var(--new);display:flex;flex-direction:column;gap:10px}
+.ocard.preparing{border-top-color:var(--prep)}
+.ocard.ready{border-top-color:var(--ready)}
+.ocard.done{border-top-color:var(--done);opacity:.85}
+.ohead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tname{font-size:20px;font-weight:800}
+.badge{font-size:12px;font-weight:800;padding:4px 10px;border-radius:99px;background:#eef2f0;color:var(--mute);white-space:nowrap}
+.badge.new{background:#fff3e0;color:#a35f00}
+.badge.preparing{background:#e6efff;color:#1d4fa0}
+.badge.ready{background:#e3f5ea;color:#17703f}
+.badge.done{background:#eceeed;color:#55605e}
+.ometa{color:var(--mute);font-size:14px}
+.oitems{margin:0;padding:0;list-style:none;border-top:1px dashed var(--line);padding-top:10px}
+.oitems li{display:flex;justify-content:space-between;padding:4px 0;font-size:15px}
+.oitems li b{color:var(--brand)}
+.onote{background:#fff8e6;color:#7a5200;border-radius:10px;padding:8px 10px;font-size:14px}
+.ofoot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;gap:8px}
+.total{font-weight:800;font-size:18px}
+.empty{color:var(--mute);text-align:center;padding:36px 12px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);grid-column:1/-1}
+
+/* ---------- Filters ---------- */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 14px;border-radius:99px;font-size:14px;font-weight:600}
+.chip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.filters{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;align-items:end}
+.filters label span{display:block;font-size:13px;color:var(--mute);font-weight:600;margin-bottom:6px}
+
+/* ---------- Menu ---------- */
+.mitem{display:grid;grid-template-columns:1fr 110px auto;gap:10px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.mitem:first-child{border-top:0}
+.mitem .n b{display:block;font-size:16px}
+.mitem .n small{color:var(--mute)}
+.mitem .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.mitem.off .n b{opacity:.5}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:6px}
+.tag.veg{background:#e3f5ea;color:#17703f}
+.tag.nv{background:#fde8e6;color:#a32a1f}
+.tag.off{background:#eceeed;color:#55605e}
+.addform{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end}
+.addform .full{grid-column:1/-1}
+.addform label span{display:block;font-size:13px;color:var(--mute);font-weight:600;margin-bottom:6px}
+
+/* ---------- Settings ---------- */
+.switch{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:6px 0}
+.switch p{margin:4px 0 0;color:var(--mute);font-size:14px}
+
+/* ---------- Summary ---------- */
+.sumrow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.sumrow div{background:var(--bg);border-radius:12px;padding:14px;text-align:center}
+.sumrow b{display:block;font-size:22px}
+.sumrow span{font-size:13px;color:var(--mute)}
+.topitems{font-size:15px}
+
+/* ---------- Bottom nav (mobile) ---------- */
+.bottom{display:none}
+
+/* ---------- Responsive ---------- */
+@media (max-width:900px){
+  .app.show{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .content{padding:16px 14px 110px}
+  .stats{grid-template-columns:1fr 1fr}
+  .filters{grid-template-columns:1fr 1fr}
+  .addform{grid-template-columns:1fr 1fr}
+  .topbar{padding:14px 16px}
+  .topbar h2{font-size:19px}
+  .bottom{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--brand);padding:8px 4px calc(8px + env(safe-area-inset-bottom,0px));justify-content:space-around;z-index:20;box-shadow:0 -4px 16px rgba(0,0,0,.15)}
+  .bottom button{background:none;border:0;color:#cfe6e1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600;padding:6px 2px;min-width:0;flex:1;position:relative}
+  .bottom button .ic{font-size:20px}
+  .bottom button.active{color:#fff}
+  .bottom button.active::after{content:"";position:absolute;bottom:-8px;width:28px;height:3px;border-radius:3px;background:var(--accent)}
+  .bottom .count{position:absolute;top:0;right:8%;background:var(--accent);color:#1b2523;font-size:11px;font-weight:800;padding:1px 6px;border-radius:99px}
+}
+@media (max-width:480px){
+  .stats{gap:10px}
+  .stat{padding:12px}
+  .stat b{font-size:21px}
+  .addform{grid-template-columns:1fr}
+  .mitem{grid-template-columns:1fr auto}
+  .mitem .acts{grid-column:1/-1;justify-content:flex-start}
+  .mitem input{width:100%}
+}
 </style>
 </head>
 <body>
-<div class="login" id="login">
-  <h1>Owner login</h1>
-  <input id="em" type="text" placeholder="User ID" autocomplete="username">
-  <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
-  <div class="err" id="err"></div>
-  <button class="btn full" id="go">Login</button>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login">
+  <div class="login-card">
+    <h1>Pizza Hub Admin</h1>
+    <p>Apna User ID aur password daalein</p>
+    <label class="field"><span>User ID</span><input id="em" type="text" autocomplete="username"></label>
+    <label class="field"><span>Password</span><input id="pw" type="password" autocomplete="current-password"></label>
+    <div class="err" id="err"></div>
+    <button class="btn block" id="go">Login karein</button>
+  </div>
 </div>
 
-<div id="app" hidden>
-  <header>
-    <h1>Owner admin</h1>
-    <button class="out" onclick="logout()">Logout</button>
-  </header>
-  <main>
-    <div class="stats">
-      <div class="stat"><b id="sOrders">0</b><span>Aaj ke orders</span></div>
-      <div class="stat"><b id="sSales">₹0</b><span>Aaj ki bikri</span></div>
+<!-- APP -->
+<div class="app" id="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">PH</div>
+      <div><b>Pizza Hub</b><small>Owner panel</small></div>
+    </div>
+    <button class="nav-btn active" data-go="dash"><span class="ic">📊</span>Dashboard</button>
+    <button class="nav-btn" data-go="today"><span class="ic">🍽️</span>Aaj ke orders<span class="count" id="cToday">0</span></button>
+    <button class="nav-btn" data-go="tomorrow"><span class="ic">📅</span>Kal ke orders<span class="count" id="cTomorrow">0</span></button>
+    <button class="nav-btn" data-go="history"><span class="ic">🗂️</span>History</button>
+    <button class="nav-btn" data-go="menu"><span class="ic">📋</span>Menu aur stock</button>
+    <button class="nav-btn" data-go="settings"><span class="ic">⚙️</span>Settings</button>
+    <div class="side-foot">
+      <button class="nav-btn" onclick="logout()"><span class="ic">🚪</span>Logout</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h2 id="title">Dashboard</h2>
+        <div class="sub" id="subtitle"></div>
+      </div>
+      <button class="btn ghost small" onclick="refreshCurrent()">↻ Refresh</button>
     </div>
 
-    <!-- ORDER HISTORY -->
-    <div class="box">
-      <h2>Order history</h2>
-      <div class="row2">
-        <label>Se (date)<input id="hFrom" type="date"></label>
-        <label>Tak (date)<input id="hTo" type="date"></label>
-      </div>
-      <div class="row2">
-        <label>Status
-          <select id="hStatus">
-            <option value="">Sab</option>
-            <option value="done">Served</option>
-            <option value="ready">Ready</option>
-            <option value="preparing">Bana rahe hain</option>
-            <option value="new">Naya</option>
-          </select>
-        </label>
-        <label>Table no.<input id="hTable" type="text" placeholder="Sab"></label>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn full" onclick="loadHistory()">Dikhayein</button>
-        <button class="btn gray" onclick="exportCsv()">CSV</button>
-      </div>
+    <div class="content">
 
-      <div class="summary">
-        <div><b id="hCount">0</b><span>Orders</span></div>
-        <div><b id="hTotal">₹0</b><span>Bikri</span></div>
-        <div><b id="hAvg">₹0</b><span>Average</span></div>
-      </div>
-      <div class="top3" id="hTop"></div>
-      <div id="hList"></div>
+      <!-- DASHBOARD -->
+      <section class="page show" id="p-dash">
+        <div class="stats">
+          <div class="stat"><b id="sOrders">0</b><span>Aaj ke orders</span></div>
+          <div class="stat a"><b id="sSales">₹0</b><span>Aaj ki bikri</span></div>
+          <div class="stat b"><b id="sActive">0</b><span>Abhi chal rahe</span></div>
+          <div class="stat c"><b id="sTomorrow">0</b><span>Kal ke orders</span></div>
+        </div>
+        <div class="card">
+          <h3>Abhi chal rahe orders</h3>
+          <div class="orders" id="dashList"></div>
+        </div>
+      </section>
+
+      <!-- AAJ KE ORDERS -->
+      <section class="page" id="p-today">
+        <div class="chips" id="todayChips">
+          <button class="chip on" data-tf="">Sab</button>
+          <button class="chip" data-tf="new">Naye</button>
+          <button class="chip" data-tf="preparing">Bana rahe</button>
+          <button class="chip" data-tf="ready">Ready</button>
+          <button class="chip" data-tf="done">Served</button>
+        </div>
+        <div class="orders" id="todayList"></div>
+      </section>
+
+      <!-- KAL KE ORDERS -->
+      <section class="page" id="p-tomorrow">
+        <div class="card">
+          <h3>Kal ke orders (pre-order)</h3>
+          <p class="muted">Yahan wahi orders dikhenge jo customer ne kal ke liye book kiye hain.</p>
+        </div>
+        <div class="orders" id="tomorrowList"></div>
+      </section>
+
+      <!-- HISTORY -->
+      <section class="page" id="p-history">
+        <div class="card">
+          <div class="filters">
+            <label><span>Se</span><input id="hFrom" type="date"></label>
+            <label><span>Tak</span><input id="hTo" type="date"></label>
+            <label><span>Status</span>
+              <select id="hStatus">
+                <option value="">Sab</option>
+                <option value="new">Naya</option>
+                <option value="preparing">Bana rahe</option>
+                <option value="ready">Ready</option>
+                <option value="done">Served</option>
+              </select>
+            </label>
+            <label><span>Table no.</span><input id="hTable" type="text" placeholder="Sab"></label>
+            <div style="display:flex;gap:10px">
+              <button class="btn block" onclick="loadHistory()">Dikhayein</button>
+              <button class="btn ghost" onclick="exportCsv()">CSV</button>
+            </div>
+          </div>
+          <div class="sumrow">
+            <div><b id="hCount">0</b><span>Orders</span></div>
+            <div><b id="hTotal">₹0</b><span>Bikri</span></div>
+            <div><b id="hAvg">₹0</b><span>Average bill</span></div>
+          </div>
+          <div class="topitems" id="hTop"></div>
+        </div>
+        <div class="orders" id="hList"></div>
+      </section>
+
+      <!-- MENU -->
+      <section class="page" id="p-menu">
+        <div class="card">
+          <h3>Naya item jodein</h3>
+          <div class="addform">
+            <label class="full"><span>Naam</span><input id="nName" placeholder="jaise Paneer Tikka Pizza"></label>
+            <label><span>Category</span><input id="nCat" placeholder="jaise Pizza"></label>
+            <label><span>Price (₹)</span><input id="nPrice" type="number" inputmode="numeric"></label>
+            <label class="full"><span>Description</span><input id="nDesc" placeholder="Chhota sa description"></label>
+            <label><span>Type</span>
+              <select id="nVeg"><option value="true">Veg</option><option value="false">Non-veg</option></select>
+            </label>
+            <button class="btn block" id="add">Item jodein</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Menu list</h3>
+          <div id="menuList"></div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="page" id="p-settings">
+        <div class="card">
+          <h3>Shop status</h3>
+          <div class="switch">
+            <div>
+              <b id="shopLabel">Khula hai</b>
+              <p>Band karne par naye orders rok sakte hain (customer page par abhi automatic nahi hai).</p>
+            </div>
+            <button class="btn" id="shopBtn" onclick="toggleShop()">Band karein</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Account</h3>
+          <p class="muted" style="margin:0 0 12px">Is device se logout karne par dobara login karna padega.</p>
+          <button class="btn danger" onclick="logout()">Logout</button>
+        </div>
+      </section>
+
     </div>
-
-    <!-- NAYA ITEM -->
-    <div class="box">
-      <h2>Naya item jodein</h2>
-      <div class="form">
-        <input id="nName" class="full" placeholder="Item ka naam">
-        <input id="nCat" placeholder="Category (jaise Pizza)">
-        <input id="nPrice" type="number" inputmode="numeric" placeholder="Price ₹">
-        <input id="nDesc" class="full" placeholder="Chhota description">
-        <select id="nVeg"><option value="true">Veg</option><option value="false">Non-veg</option></select>
-        <button class="btn" id="add">Item jodein</button>
-      </div>
-    </div>
-
-    <!-- MENU -->
-    <div class="box"><h2>Menu</h2><div id="items"></div></div>
-  </main>
+  </div>
 </div>
+
+<!-- Bottom navigation (mobile) -->
+<nav class="bottom" id="bottomNav" hidden>
+  <button class="active" data-go="dash"><span class="ic">📊</span>Dashboard</button>
+  <button data-go="today"><span class="ic">🍽️</span>Aaj<span class="count" id="mToday" hidden>0</span></button>
+  <button data-go="tomorrow"><span class="ic">📅</span>Kal</button>
+  <button data-go="history"><span class="ic">🗂️</span>History</button>
+  <button data-go="menu"><span class="ic">📋</span>Menu</button>
+  <button data-go="settings"><span class="ic">⚙️</span>Settings</button>
+</nav>
 
 <script>
 var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
 var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
 var SESSION_KEY="adminSession";
-var token=null,menu=[],lastRows=[];
+var token=null,menu=[],todayRows=[],historyRows=[],currentPage="dash",todayFilter="",shopOpen=true;
+var NEXT={"new":["preparing","Banana shuru karo"],"preparing":["ready","Ready hai"],"ready":["done","Served"]};
+var TITLES={dash:"Dashboard",today:"Aaj ke orders",tomorrow:"Kal ke orders",history:"History",menu:"Menu aur stock",settings:"Settings"};
+
 function $(i){return document.getElementById(i)}
-function H(x){return Object.assign({"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json"},x||{})}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function rs(n){return "₹"+Math.round(Number(n)||0)}
-function toEmail(u){
-  u=u.trim().toLowerCase();
-  return u.indexOf("@")>-1?u:u+"@pizzhub.app";
-}
+function pad(n){return ("0"+n).slice(-2)}
+function hm(d){return pad(d.getHours())+":"+pad(d.getMinutes())}
+function ymd(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function dayStart(d){var x=new Date(d);x.setHours(0,0,0,0);return x}
+function addDays(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x}
+function toEmail(u){u=u.trim().toLowerCase();return u.indexOf("@")>-1?u:u+"@pizzhub.app"}
+function stLabel(s){return {"new":"Naya","preparing":"Bana rahe","ready":"Ready","done":"Served"}[s]||s}
 
-/* ---------- Session (login ek baar, refresh apne aap) ---------- */
+/* ---------- Session ---------- */
 function saveSession(d){
   var s={access_token:d.access_token,refresh_token:d.refresh_token,expires_at:Date.now()+(d.expires_in||3600)*1000-60000};
   localStorage.setItem(SESSION_KEY,JSON.stringify(s));
@@ -149,29 +357,24 @@ function refreshSession(){
   return fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
     body:JSON.stringify({refresh_token:s.refresh_token})})
   .then(function(r){return r.json()})
-  .then(function(d){
-    if(!d.access_token)throw "auth";
-    saveSession(d);
-    return token;
-  });
+  .then(function(d){if(!d.access_token)throw "auth";saveSession(d);return token});
 }
 function ensureToken(){
   var s=loadSession();
   if(s&&s.expires_at>Date.now()){token=s.access_token;return Promise.resolve(token)}
   return refreshSession();
 }
-function logout(){
-  localStorage.removeItem(SESSION_KEY);
-  location.reload();
-}
+function logout(){localStorage.removeItem(SESSION_KEY);location.reload()}
 function showLogin(msg){
-  $("app").hidden=true;$("login").hidden=false;
+  $("app").classList.remove("show");$("bottomNav").hidden=true;$("login").style.display="grid";
   $("err").textContent=msg||"";
 }
 function showApp(){
-  $("login").hidden=true;$("app").hidden=false;
+  $("login").style.display="none";$("app").classList.add("show");$("bottomNav").hidden=false;
+  $("subtitle").textContent=new Date().toLocaleDateString("hi-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   setDefaultDates();
-  loadMenu();loadStats();loadHistory();
+  loadSettings();
+  go("dash");
 }
 
 /* ---------- Login ---------- */
@@ -180,123 +383,132 @@ $("go").onclick=function(){
   fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
     body:JSON.stringify({email:toEmail($("em").value),password:$("pw").value})})
   .then(function(r){return r.json()})
-  .then(function(d){
-    if(!d.access_token)throw 0;
-    saveSession(d);
-    showApp();
-  })
+  .then(function(d){if(!d.access_token)throw 0;saveSession(d);showApp()})
   .catch(function(){$("err").textContent="User ID ya password galat hai."});
 };
 
 /* ---------- API ---------- */
-function api(path,method,body){
+function api(path,method,body,prefer){
+  method=method||"GET";
   return ensureToken().then(function(){
-    return fetch(SB_URL+"/rest/v1/"+path,{method:method||"GET",headers:H(method&&method!=="GET"?{"Prefer":"return=minimal"}:{}),body:body?JSON.stringify(body):undefined});
+    var h={"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json"};
+    if(method!=="GET")h["Prefer"]=prefer||"return=minimal";
+    return fetch(SB_URL+"/rest/v1/"+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined});
   }).then(function(r){
     if(r.status===401)throw "auth";
     if(!r.ok)throw new Error(r.status);
-    return method&&method!=="GET"?null:r.json();
+    return method==="GET"?r.json():null;
   }).catch(function(e){
     if(e==="auth"){showLogin("Session khatam. Dobara login karein.");return null}
     throw e;
   });
 }
 
-/* ---------- Menu ---------- */
-function loadMenu(){
-  api("menu_items?select=*&order=category,id").then(function(rows){
-    if(!rows)return;
-    menu=rows;
-    $("items").innerHTML=rows.length?rows.map(function(m){
-      return '<div class="item'+(m.available?'':' off')+'"><div class="n">'+esc(m.name)+(m.veg?' 🟢':' 🔴')+'<small>'+esc(m.category)+(m.available?'':' · band hai')+'</small></div>'+
-      '<input type="number" inputmode="numeric" value="'+m.price+'" id="p'+m.id+'" aria-label="Price">'+
-      '<button class="btn sm" data-save="'+m.id+'">Save</button>'+
-      '<button class="btn sm gray" data-tog="'+m.id+'">'+(m.available?'Band karo':'Chalu karo')+'</button>'+
-      '<button class="btn sm red" data-del="'+m.id+'">Hatao</button></div>';
-    }).join(""):'<p>Abhi koi item nahi.</p>';
-  }).catch(function(){});
+/* ---------- Navigation ---------- */
+function go(page){
+  currentPage=page;
+  document.querySelectorAll(".page").forEach(function(p){p.classList.remove("show")});
+  $("p-"+page).classList.add("show");
+  $("title").textContent=TITLES[page];
+  document.querySelectorAll("[data-go]").forEach(function(b){b.classList.toggle("active",b.dataset.go===page)});
+  refreshCurrent();
+}
+function refreshCurrent(){
+  if(currentPage==="dash"||currentPage==="today")loadToday();
+  if(currentPage==="tomorrow")loadTomorrow();
+  if(currentPage==="history")loadHistory();
+  if(currentPage==="menu")loadMenu();
+  if(currentPage==="settings")loadSettings();
+  loadTomorrowCount();
 }
 
-/* ---------- Aaj ke stats ---------- */
-function loadStats(){
-  var d=new Date();d.setHours(0,0,0,0);
-  api("orders?select=total&created_at=gte."+encodeURIComponent(d.toISOString())).then(function(rows){
+/* ---------- Aaj ke orders ---------- */
+function loadToday(){
+  var s=dayStart(new Date()),e=addDays(s,1);
+  api("orders?select=*&order=created_at.asc&created_at=gte."+encodeURIComponent(s.toISOString())+"&created_at=lt."+encodeURIComponent(e.toISOString()))
+  .then(function(rows){
     if(!rows)return;
+    todayRows=rows;
+    var total=rows.reduce(function(a,o){return a+(Number(o.total)||0)},0);
+    var active=rows.filter(function(o){return o.status!=="done"});
     $("sOrders").textContent=rows.length;
-    $("sSales").textContent=rs(rows.reduce(function(a,o){return a+(o.total||0)},0));
+    $("sSales").textContent=rs(total);
+    $("sActive").textContent=active.length;
+    $("cToday").textContent=active.length;
+    $("mToday").textContent=active.length;
+    $("mToday").hidden=!active.length;
+    $("dashList").innerHTML=active.length?active.map(orderCard).join(""):'<div class="empty">Abhi koi order chal nahi raha.</div>';
+    var list=todayFilter?rows.filter(function(o){return (o.status||"new")===todayFilter}):rows;
+    $("todayList").innerHTML=list.length?list.slice().reverse().map(orderCard).join(""):'<div class="empty">Is filter mein koi order nahi.</div>';
+  }).catch(function(){});
+}
+function loadTomorrowCount(){
+  var t=ymd(addDays(new Date(),1));
+  api("orders?select=id&scheduled_for=eq."+t).then(function(rows){
+    if(!rows)return;
+    $("cTomorrow").textContent=rows.length;
+    $("sTomorrow").textContent=rows.length;
+  }).catch(function(){});
+}
+function loadTomorrow(){
+  var t=ymd(addDays(new Date(),1));
+  api("orders?select=*&scheduled_for=eq."+t+"&order=created_at.asc").then(function(rows){
+    if(!rows)return;
+    $("tomorrowList").innerHTML=rows.length?rows.map(orderCard).join(""):'<div class="empty">Kal ke liye koi pre-order nahi hai.</div>';
   }).catch(function(){});
 }
 
-/* ---------- Order history ---------- */
-function ymd(d){
-  var m=("0"+(d.getMonth()+1)).slice(-2),day=("0"+d.getDate()).slice(-2);
-  return d.getFullYear()+"-"+m+"-"+day;
+function orderCard(o){
+  var st=o.status||"new";
+  var when=new Date(o.created_at);
+  var items=(o.items||[]).map(function(i){return '<li><span>'+esc(i.name)+'</span><b>'+esc(i.qty)+'×</b></li>'}).join("");
+  var n=NEXT[st];
+  var btn=n?'<button class="btn small" data-next="'+o.id+'" data-st="'+n[0]+'">'+n[1]+'</button>':'<span class="badge done">Complete</span>';
+  return '<div class="ocard '+esc(st)+'">'+
+    '<div class="ohead"><span class="tname">Table '+esc(o.table_no)+'</span><span class="badge '+esc(st)+'">'+stLabel(st)+'</span></div>'+
+    '<div class="ometa">#'+o.id+' · '+hm(when)+(o.scheduled_for?' · Pre-order '+esc(o.scheduled_for):'')+'</div>'+
+    '<ul class="oitems">'+items+'</ul>'+
+    (o.note?'<div class="onote">Note: '+esc(o.note)+'</div>':'')+
+    '<div class="ofoot"><span class="total">'+rs(o.total)+'</span>'+btn+'</div>'+
+    '</div>';
 }
+
+/* ---------- History ---------- */
 function setDefaultDates(){
-  var today=new Date();
-  var weekAgo=new Date();weekAgo.setDate(weekAgo.getDate()-6);
-  $("hFrom").value=ymd(weekAgo);
-  $("hTo").value=ymd(today);
+  $("hFrom").value=ymd(addDays(new Date(),-6));
+  $("hTo").value=ymd(new Date());
 }
 function loadHistory(){
   var from=$("hFrom").value,to=$("hTo").value;
   if(!from||!to){alert("Dono dates bharein.");return}
   var start=new Date(from+"T00:00:00");
   var end=new Date(to+"T00:00:00");end.setDate(end.getDate()+1);
-
   var q="orders?select=*&order=created_at.desc&limit=500"+
         "&created_at=gte."+encodeURIComponent(start.toISOString())+
         "&created_at=lt."+encodeURIComponent(end.toISOString());
-  var st=$("hStatus").value;
-  if(st)q+="&status=eq."+st;
-  var tb=$("hTable").value.trim();
-  if(tb)q+="&table_no=eq."+encodeURIComponent(tb);
-
+  var st=$("hStatus").value;if(st)q+="&status=eq."+st;
+  var tb=$("hTable").value.trim();if(tb)q+="&table_no=eq."+encodeURIComponent(tb);
   api(q).then(function(rows){
     if(!rows)return;
-    lastRows=rows;
-    renderHistory(rows);
-  }).catch(function(){
-    $("hList").innerHTML='<p>History load nahi hui. Dobara try karein.</p>';
-  });
+    historyRows=rows;
+    var total=rows.reduce(function(a,o){return a+(Number(o.total)||0)},0);
+    $("hCount").textContent=rows.length;
+    $("hTotal").textContent=rs(total);
+    $("hAvg").textContent=rs(rows.length?total/rows.length:0);
+    var counts={};
+    rows.forEach(function(o){(o.items||[]).forEach(function(i){counts[i.name]=(counts[i.name]||0)+(Number(i.qty)||1)})});
+    var top=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a]}).slice(0,3);
+    $("hTop").innerHTML=top.length?"<b>Sabse zyada bika:</b> "+top.map(function(n){return esc(n)+" ("+counts[n]+")"}).join(" · "):"";
+    $("hList").innerHTML=rows.length?rows.map(orderCard).join(""):'<div class="empty">Is date range mein koi order nahi.</div>';
+  }).catch(function(){$("hList").innerHTML='<div class="empty">History load nahi hui.</div>'});
 }
-function renderHistory(rows){
-  var total=rows.reduce(function(a,o){return a+(Number(o.total)||0)},0);
-  $("hCount").textContent=rows.length;
-  $("hTotal").textContent=rs(total);
-  $("hAvg").textContent=rs(rows.length?total/rows.length:0);
-
-  // Sabse zyada bikne wale items
-  var counts={};
-  rows.forEach(function(o){
-    (o.items||[]).forEach(function(i){
-      counts[i.name]=(counts[i.name]||0)+(Number(i.qty)||1);
-    });
-  });
-  var top=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a]}).slice(0,3);
-  $("hTop").innerHTML=top.length?"<b>Top items:</b> "+top.map(function(n){return esc(n)+" ("+counts[n]+")"}).join(", "):"";
-
-  $("hList").innerHTML=rows.length?rows.map(function(o){
-    var when=new Date(o.created_at);
-    var t=("0"+when.getHours()).slice(-2)+":"+("0"+when.getMinutes()).slice(-2);
-    var d=ymd(when);
-    var items=(o.items||[]).map(function(i){return '<li>'+esc(i.qty)+'× '+esc(i.name)+'</li>'}).join("");
-    return '<div class="ord"><div class="top"><b>Table '+esc(o.table_no)+' · #'+o.id+'</b>'+
-      '<span class="badge '+esc(o.status)+'">'+esc(o.status||"new")+'</span></div>'+
-      '<div class="meta">'+d+' '+t+' · '+rs(o.total)+(o.note?' · Note: '+esc(o.note):'')+'</div>'+
-      '<ul>'+items+'</ul></div>';
-  }).join(""):'<p>Is date range mein koi order nahi.</p>';
-}
-
 function exportCsv(){
-  if(!lastRows.length){alert("Pehle history dikhayein.");return}
-  var head=["id","date","time","table","status","total","items","note"];
-  var lines=[head.join(",")];
-  lastRows.forEach(function(o){
+  if(!historyRows.length){alert("Pehle history dikhayein.");return}
+  var lines=[["id","date","time","table","status","total","items","note","scheduled_for"].join(",")];
+  historyRows.forEach(function(o){
     var when=new Date(o.created_at);
     var items=(o.items||[]).map(function(i){return i.qty+"x "+i.name}).join(" | ");
-    var row=[o.id,ymd(when),("0"+when.getHours()).slice(-2)+":"+("0"+when.getMinutes()).slice(-2),
-             o.table_no,o.status||"new",o.total,items,o.note||""];
+    var row=[o.id,ymd(when),hm(when),o.table_no,o.status||"new",o.total,items,o.note||"",o.scheduled_for||""];
     lines.push(row.map(function(v){return '"'+String(v==null?"":v).replace(/"/g,'""')+'"'}).join(","));
   });
   var blob=new Blob(["\uFEFF"+lines.join("\n")],{type:"text/csv;charset=utf-8"});
@@ -306,24 +518,73 @@ function exportCsv(){
   document.body.appendChild(a);a.click();a.remove();
 }
 
-/* ---------- Naya item ---------- */
+/* ---------- Menu ---------- */
+function loadMenu(){
+  api("menu_items?select=*&order=category,id").then(function(rows){
+    if(!rows)return;
+    menu=rows;
+    $("menuList").innerHTML=rows.length?rows.map(function(m){
+      return '<div class="mitem'+(m.available?'':' off')+'">'+
+        '<div class="n"><b>'+esc(m.name)+'<span class="tag '+(m.veg?'veg':'nv')+'">'+(m.veg?'Veg':'Non-veg')+'</span>'+(m.available?'':'<span class="tag off">Band</span>')+'</b>'+
+        '<small>'+esc(m.category)+(m.description?' · '+esc(m.description):'')+'</small></div>'+
+        '<input type="number" inputmode="numeric" value="'+m.price+'" id="p'+m.id+'" aria-label="Price">'+
+        '<div class="acts">'+
+          '<button class="btn small" data-save="'+m.id+'">Save</button>'+
+          '<button class="btn small ghost" data-tog="'+m.id+'">'+(m.available?'Band karo':'Chalu karo')+'</button>'+
+          '<button class="btn small danger" data-del="'+m.id+'">Hatao</button>'+
+        '</div></div>';
+    }).join(""):'<div class="empty">Abhi koi item nahi.</div>';
+  }).catch(function(){});
+}
+
 $("add").onclick=function(){
   var name=$("nName").value.trim(),price=parseInt($("nPrice").value,10),cat=$("nCat").value.trim();
   if(!name||!cat||!(price>0)){alert("Naam, category aur price zaroor bharein.");return}
   api("menu_items","POST",{name:name,category:cat,price:price,description:$("nDesc").value.trim(),veg:$("nVeg").value==="true"})
-  .then(function(){
-    ["nName","nCat","nPrice","nDesc"].forEach(function(i){$(i).value=""});
-    loadMenu();
-  })
+  .then(function(){["nName","nCat","nPrice","nDesc"].forEach(function(i){$(i).value=""});loadMenu()})
   .catch(function(){alert("Item nahi juda. Dobara try karein.")});
 };
 
-/* ---------- Menu actions ---------- */
+/* ---------- Settings (shop status) ---------- */
+function loadSettings(){
+  api("settings?select=value&key=eq.shop_open").then(function(rows){
+    if(!rows)return;
+    shopOpen=!rows.length||rows[0].value==="true";
+    paintShop();
+  }).catch(function(){});
+}
+function paintShop(){
+  $("shopLabel").textContent=shopOpen?"Khula hai":"Band hai";
+  $("shopBtn").textContent=shopOpen?"Band karein":"Khol dein";
+  $("shopBtn").className="btn "+(shopOpen?"":"accent");
+}
+function toggleShop(){
+  var next=!shopOpen;
+  api("settings?on_conflict=key","POST",[{key:"shop_open",value:String(next)}],"resolution=merge-duplicates,return=minimal")
+  .then(function(){shopOpen=next;paintShop()})
+  .catch(function(){alert("Save nahi hua. Dobara try karein.")});
+}
+
+/* ---------- Clicks (ek hi jagah se sab) ---------- */
 document.addEventListener("click",function(e){
-  var t=e.target,id;
+  var t=e.target.closest("button,[data-go]");
+  if(!t)return;
+  if(t.dataset.go){go(t.dataset.go);return}
+  if(t.dataset.next){
+    t.disabled=true;
+    api("orders?id=eq."+t.dataset.next,"PATCH",{status:t.dataset.st}).then(refreshCurrent);
+    return;
+  }
+  if(t.closest("#todayChips")){
+    todayFilter=t.dataset.tf||"";
+    document.querySelectorAll("#todayChips .chip").forEach(function(c){c.classList.toggle("on",c===t)});
+    loadToday();return;
+  }
+  var id;
   if(id=t.dataset.save){
-    var p=parseInt($("p"+id).value,10);if(!(p>0)){alert("Sahi price daalein.");return}
-    api("menu_items?id=eq."+id,"PATCH",{price:p}).then(function(){t.textContent="Saved ✓";setTimeout(loadMenu,800)});
+    var p=parseInt($("p"+id).value,10);
+    if(!(p>0)){alert("Sahi price daalein.");return}
+    api("menu_items?id=eq."+id,"PATCH",{price:p}).then(function(){t.textContent="Saved ✓";setTimeout(loadMenu,700)});
   }else if(id=t.dataset.tog){
     var m=menu.filter(function(x){return x.id==id})[0];
     api("menu_items?id=eq."+id,"PATCH",{available:!m.available}).then(loadMenu);
@@ -331,6 +592,11 @@ document.addEventListener("click",function(e){
     if(confirm("Is item ko hamesha ke liye hata dein?"))api("menu_items?id=eq."+id,"DELETE").then(loadMenu);
   }
 });
+
+/* ---------- Auto refresh (har 15 second) ---------- */
+setInterval(function(){
+  if(token&&$("app").classList.contains("show"))refreshCurrent();
+},15000);
 
 /* ---------- Shuru ---------- */
 if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
