@@ -159,7 +159,9 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
 .mstats span{font-size:12px;color:var(--mute)}
 .mstats .bigbill b{color:var(--ready)}
 .mlist{list-style:none;margin:0 0 12px;padding:0}
-.mlist li{display:flex;justify-content:space-between;padding:8px 0;border-top:1px dashed var(--line);font-size:16px}
+.mlist li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 0;border-top:1px dashed var(--line);font-size:16px}
+.mlist li .amt{font-weight:800;text-align:right}
+.mlist li small{grid-column:1/-1;color:var(--mute);font-size:13px;margin-top:-2px}
 .mlist li b{color:var(--brand)}
 .mnote{background:#fff8e6;color:#7a5200;border-radius:10px;padding:8px 10px;font-size:14px;margin-bottom:8px}
 
@@ -409,19 +411,38 @@ function tableTiles(rows){
 }
 function openTable(k){openTbl=k;renderTable();$("tmodal").classList.add("show")}
 function closeTable(){openTbl=null;$("tmodal").classList.remove("show")}
+var menuPrice={};
+function loadPrices(){
+  api("menu_items?select=name,price").then(function(rows){
+    if(!rows)return;
+    rows.forEach(function(m){menuPrice[String(m.name).trim().toLowerCase()]=Number(m.price)||0});
+    if(openTbl!==null)renderTable();
+  }).catch(function(){});
+}
+function unitPrice(i){
+  if(i.price!=null&&!isNaN(Number(i.price)))return Number(i.price);
+  var k=String(i.name).trim().toLowerCase();
+  return menuPrice.hasOwnProperty(k)?menuPrice[k]:null;
+}
 function renderTable(){
   var list=todayRows.filter(function(o){return String(o.table_no)===openTbl});
-  var items={},cnt=0,sum=0,notes=[];
+  var lines={},order=[],cnt=0,sum=0,notes=[];
   list.forEach(function(o){
     sum+=Number(o.total)||0;
     if(o.note)notes.push(o.note);
-    (o.items||[]).forEach(function(i){var q=Number(i.qty)||1;items[i.name]=(items[i.name]||0)+q;cnt+=q});
+    (o.items||[]).forEach(function(i){
+      var q=Number(i.qty)||1,pr=unitPrice(i),key=String(i.name)+"|"+pr;
+      if(!lines[key]){lines[key]={name:i.name,price:pr,qty:0};order.push(key)}
+      lines[key].qty+=q;cnt+=q;
+    });
   });
-  var names=Object.keys(items);
   $("tmTitle").textContent="Table "+openTbl;
   $("tmBody").innerHTML=list.length
     ? '<div class="mstats"><div><b>'+cnt+'</b><span>Items</span></div><div><b>'+list.length+'</b><span>Orders</span></div><div class="bigbill"><b>'+rs(sum)+'</b><span>Total bill</span></div></div>'+
-      '<ul class="mlist">'+names.map(function(n){return '<li><span>'+esc(n)+'</span><b>'+items[n]+'×</b></li>'}).join("")+'</ul>'+
+      '<ul class="mlist">'+order.map(function(k){
+        var l=lines[k];
+        return '<li><span>'+esc(l.name)+'</span><span class="amt">'+(l.price==null?"—":rs(l.price*l.qty))+'</span><small>'+(l.price==null?"price nahi mila":rs(l.price))+' × '+l.qty+'</small></li>';
+      }).join("")+'</ul>'+
       notes.map(function(n){return '<div class="mnote">Note: '+esc(n)+'</div>'}).join("")+
       '<p class="muted">Ye record aapke History page mein bhi save rehta hai.</p>'
     : '<p class="muted">Aaj is table se koi order nahi aaya.</p>';
@@ -463,6 +484,7 @@ function showApp(){
   $("subtitle").textContent=new Date().toLocaleDateString("hi-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   setDefaultDates();
   loadSettings();
+  loadPrices();
   go("dash");
 }
 
