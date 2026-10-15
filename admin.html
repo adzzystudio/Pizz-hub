@@ -4,8 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Owner Admin</title>
+<link rel="manifest" href="/manifest-admin.json">
+<meta name="theme-color" content="#0f4c45">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <style>
-:root{--bg:#f4f7f6;--card:#fff;--ink:#1b2523;--mute:#66736f;--brand:#0f4c45;--accent:#f2a33a;--line:#dfe6e3;--bad:#c0392b}
+:root{--bg:#f4f7f6;--card:#fff;--ink:#1b2523;--mute:#66736f;--brand:#0f4c45;--accent:#f2a33a;--line:#dfe6e3;--bad:#c0392b;--ok:#1f9d55}
 @media (prefers-color-scheme:dark){:root{--bg:#101716;--card:#18221f;--ink:#e8efed;--mute:#93a39e;--brand:#3fbfa8;--line:#2a3733}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,sans-serif}
@@ -13,12 +16,14 @@ button,input,select{font:inherit}
 input,select{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 .btn{padding:10px 16px;border:0;border-radius:8px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer}
 .btn.sm{padding:6px 10px;font-size:13px}.btn.red{background:var(--bad)}.btn.gray{background:var(--mute)}
+.btn.full{width:100%}
 .login{max-width:340px;margin:12vh auto;padding:20px}
 .login input{margin-bottom:10px}
 .err{color:var(--bad);min-height:20px;font-size:14px}
-header{background:var(--brand);color:#fff;padding:16px}
+header{background:var(--brand);color:#fff;padding:16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 header h1{margin:0;font-size:20px}
-main{max-width:680px;margin:0 auto;padding:12px}
+.out{background:none;border:1px solid #ffffff88;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
+main{max-width:720px;margin:0 auto;padding:12px}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
 .stat b{display:block;font-size:24px}.stat span{color:var(--mute);font-size:13px}
@@ -26,27 +31,80 @@ main{max-width:680px;margin:0 auto;padding:12px}
 .box h2{margin:0 0 10px;font-size:17px}
 .form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .form .full{grid-column:1/-1}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .item{display:flex;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
 .item .n{flex:1;min-width:140px}.item .n small{display:block;color:var(--mute)}
 .item input{width:80px}
 .off{opacity:.5}
+.ord{border-top:1px solid var(--line);padding:10px 0}
+.ord .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ord .meta{color:var(--mute);font-size:13px}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:700;background:var(--line)}
+.badge.done{background:#e8f5e9;color:var(--ok)}
+.badge.ready{background:#fff4df;color:#9a6200}
+.badge.preparing{background:#e3eefc;color:#1d4fa0}
+.ord ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+.top3{font-size:14px;margin:8px 0}
+.summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0}
+.summary div{background:var(--bg);border-radius:8px;padding:10px;text-align:center}
+.summary b{display:block;font-size:20px}
+.summary span{font-size:12px;color:var(--mute)}
 </style>
 </head>
 <body>
 <div class="login" id="login">
   <h1>Owner login</h1>
-  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="em" type="text" placeholder="User ID" autocomplete="username">
   <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
   <div class="err" id="err"></div>
-  <button class="btn" id="go" style="width:100%">Login</button>
+  <button class="btn full" id="go">Login</button>
 </div>
+
 <div id="app" hidden>
-  <header><h1>Owner admin</h1></header>
+  <header>
+    <h1>Owner admin</h1>
+    <button class="out" onclick="logout()">Logout</button>
+  </header>
   <main>
     <div class="stats">
       <div class="stat"><b id="sOrders">0</b><span>Aaj ke orders</span></div>
       <div class="stat"><b id="sSales">₹0</b><span>Aaj ki bikri</span></div>
     </div>
+
+    <!-- ORDER HISTORY -->
+    <div class="box">
+      <h2>Order history</h2>
+      <div class="row2">
+        <label>Se (date)<input id="hFrom" type="date"></label>
+        <label>Tak (date)<input id="hTo" type="date"></label>
+      </div>
+      <div class="row2">
+        <label>Status
+          <select id="hStatus">
+            <option value="">Sab</option>
+            <option value="done">Served</option>
+            <option value="ready">Ready</option>
+            <option value="preparing">Bana rahe hain</option>
+            <option value="new">Naya</option>
+          </select>
+        </label>
+        <label>Table no.<input id="hTable" type="text" placeholder="Sab"></label>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn full" onclick="loadHistory()">Dikhayein</button>
+        <button class="btn gray" onclick="exportCsv()">CSV</button>
+      </div>
+
+      <div class="summary">
+        <div><b id="hCount">0</b><span>Orders</span></div>
+        <div><b id="hTotal">₹0</b><span>Bikri</span></div>
+        <div><b id="hAvg">₹0</b><span>Average</span></div>
+      </div>
+      <div class="top3" id="hTop"></div>
+      <div id="hList"></div>
+    </div>
+
+    <!-- NAYA ITEM -->
     <div class="box">
       <h2>Naya item jodein</h2>
       <div class="form">
@@ -58,34 +116,96 @@ main{max-width:680px;margin:0 auto;padding:12px}
         <button class="btn" id="add">Item jodein</button>
       </div>
     </div>
+
+    <!-- MENU -->
     <div class="box"><h2>Menu</h2><div id="items"></div></div>
   </main>
 </div>
+
 <script>
 var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
 var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
-var token=null,menu=[];
+var SESSION_KEY="adminSession";
+var token=null,menu=[],lastRows=[];
 function $(i){return document.getElementById(i)}
 function H(x){return Object.assign({"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json"},x||{})}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
-function api(path,method,body){
-  return fetch(SB_URL+"/rest/v1/"+path,{method:method||"GET",headers:H(method&&method!=="GET"?{"Prefer":"return=minimal"}:{}),body:body?JSON.stringify(body):undefined})
-  .then(function(r){
-    if(r.status===401){alert("Session khatam. Page refresh karke dobara login karein.");throw 0}
-    if(!r.ok)throw new Error(r.status);
-    return method&&method!=="GET"?null:r.json();
+function rs(n){return "₹"+Math.round(Number(n)||0)}
+function toEmail(u){
+  u=u.trim().toLowerCase();
+  return u.indexOf("@")>-1?u:u+"@pizzhub.app";
+}
+
+/* ---------- Session (login ek baar, refresh apne aap) ---------- */
+function saveSession(d){
+  var s={access_token:d.access_token,refresh_token:d.refresh_token,expires_at:Date.now()+(d.expires_in||3600)*1000-60000};
+  localStorage.setItem(SESSION_KEY,JSON.stringify(s));
+  token=s.access_token;
+}
+function loadSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||"null")}catch(e){return null}}
+function refreshSession(){
+  var s=loadSession();
+  if(!s||!s.refresh_token)return Promise.reject("auth");
+  return fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({refresh_token:s.refresh_token})})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(!d.access_token)throw "auth";
+    saveSession(d);
+    return token;
   });
 }
+function ensureToken(){
+  var s=loadSession();
+  if(s&&s.expires_at>Date.now()){token=s.access_token;return Promise.resolve(token)}
+  return refreshSession();
+}
+function logout(){
+  localStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+function showLogin(msg){
+  $("app").hidden=true;$("login").hidden=false;
+  $("err").textContent=msg||"";
+}
+function showApp(){
+  $("login").hidden=true;$("app").hidden=false;
+  setDefaultDates();
+  loadMenu();loadStats();loadHistory();
+}
+
+/* ---------- Login ---------- */
 $("go").onclick=function(){
   $("err").textContent="";
   fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
-    body:JSON.stringify({email:$("em").value.trim(),password:$("pw").value})})
+    body:JSON.stringify({email:toEmail($("em").value),password:$("pw").value})})
   .then(function(r){return r.json()})
-  .then(function(d){if(!d.access_token)throw 0;token=d.access_token;$("login").hidden=true;$("app").hidden=false;loadMenu();loadStats()})
-  .catch(function(){$("err").textContent="Email ya password galat hai."});
+  .then(function(d){
+    if(!d.access_token)throw 0;
+    saveSession(d);
+    showApp();
+  })
+  .catch(function(){$("err").textContent="User ID ya password galat hai."});
 };
+
+/* ---------- API ---------- */
+function api(path,method,body){
+  return ensureToken().then(function(){
+    return fetch(SB_URL+"/rest/v1/"+path,{method:method||"GET",headers:H(method&&method!=="GET"?{"Prefer":"return=minimal"}:{}),body:body?JSON.stringify(body):undefined});
+  }).then(function(r){
+    if(r.status===401)throw "auth";
+    if(!r.ok)throw new Error(r.status);
+    return method&&method!=="GET"?null:r.json();
+  }).catch(function(e){
+    if(e==="auth"){showLogin("Session khatam. Dobara login karein.");return null}
+    throw e;
+  });
+}
+
+/* ---------- Menu ---------- */
 function loadMenu(){
   api("menu_items?select=*&order=category,id").then(function(rows){
+    if(!rows)return;
     menu=rows;
     $("items").innerHTML=rows.length?rows.map(function(m){
       return '<div class="item'+(m.available?'':' off')+'"><div class="n">'+esc(m.name)+(m.veg?' 🟢':' 🔴')+'<small>'+esc(m.category)+(m.available?'':' · band hai')+'</small></div>'+
@@ -94,22 +214,111 @@ function loadMenu(){
       '<button class="btn sm gray" data-tog="'+m.id+'">'+(m.available?'Band karo':'Chalu karo')+'</button>'+
       '<button class="btn sm red" data-del="'+m.id+'">Hatao</button></div>';
     }).join(""):'<p>Abhi koi item nahi.</p>';
-  });
+  }).catch(function(){});
 }
+
+/* ---------- Aaj ke stats ---------- */
 function loadStats(){
   var d=new Date();d.setHours(0,0,0,0);
   api("orders?select=total&created_at=gte."+encodeURIComponent(d.toISOString())).then(function(rows){
+    if(!rows)return;
     $("sOrders").textContent=rows.length;
-    $("sSales").textContent="₹"+rows.reduce(function(a,o){return a+(o.total||0)},0);
+    $("sSales").textContent=rs(rows.reduce(function(a,o){return a+(o.total||0)},0));
+  }).catch(function(){});
+}
+
+/* ---------- Order history ---------- */
+function ymd(d){
+  var m=("0"+(d.getMonth()+1)).slice(-2),day=("0"+d.getDate()).slice(-2);
+  return d.getFullYear()+"-"+m+"-"+day;
+}
+function setDefaultDates(){
+  var today=new Date();
+  var weekAgo=new Date();weekAgo.setDate(weekAgo.getDate()-6);
+  $("hFrom").value=ymd(weekAgo);
+  $("hTo").value=ymd(today);
+}
+function loadHistory(){
+  var from=$("hFrom").value,to=$("hTo").value;
+  if(!from||!to){alert("Dono dates bharein.");return}
+  var start=new Date(from+"T00:00:00");
+  var end=new Date(to+"T00:00:00");end.setDate(end.getDate()+1);
+
+  var q="orders?select=*&order=created_at.desc&limit=500"+
+        "&created_at=gte."+encodeURIComponent(start.toISOString())+
+        "&created_at=lt."+encodeURIComponent(end.toISOString());
+  var st=$("hStatus").value;
+  if(st)q+="&status=eq."+st;
+  var tb=$("hTable").value.trim();
+  if(tb)q+="&table_no=eq."+encodeURIComponent(tb);
+
+  api(q).then(function(rows){
+    if(!rows)return;
+    lastRows=rows;
+    renderHistory(rows);
+  }).catch(function(){
+    $("hList").innerHTML='<p>History load nahi hui. Dobara try karein.</p>';
   });
 }
+function renderHistory(rows){
+  var total=rows.reduce(function(a,o){return a+(Number(o.total)||0)},0);
+  $("hCount").textContent=rows.length;
+  $("hTotal").textContent=rs(total);
+  $("hAvg").textContent=rs(rows.length?total/rows.length:0);
+
+  // Sabse zyada bikne wale items
+  var counts={};
+  rows.forEach(function(o){
+    (o.items||[]).forEach(function(i){
+      counts[i.name]=(counts[i.name]||0)+(Number(i.qty)||1);
+    });
+  });
+  var top=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a]}).slice(0,3);
+  $("hTop").innerHTML=top.length?"<b>Top items:</b> "+top.map(function(n){return esc(n)+" ("+counts[n]+")"}).join(", "):"";
+
+  $("hList").innerHTML=rows.length?rows.map(function(o){
+    var when=new Date(o.created_at);
+    var t=("0"+when.getHours()).slice(-2)+":"+("0"+when.getMinutes()).slice(-2);
+    var d=ymd(when);
+    var items=(o.items||[]).map(function(i){return '<li>'+esc(i.qty)+'× '+esc(i.name)+'</li>'}).join("");
+    return '<div class="ord"><div class="top"><b>Table '+esc(o.table_no)+' · #'+o.id+'</b>'+
+      '<span class="badge '+esc(o.status)+'">'+esc(o.status||"new")+'</span></div>'+
+      '<div class="meta">'+d+' '+t+' · '+rs(o.total)+(o.note?' · Note: '+esc(o.note):'')+'</div>'+
+      '<ul>'+items+'</ul></div>';
+  }).join(""):'<p>Is date range mein koi order nahi.</p>';
+}
+
+function exportCsv(){
+  if(!lastRows.length){alert("Pehle history dikhayein.");return}
+  var head=["id","date","time","table","status","total","items","note"];
+  var lines=[head.join(",")];
+  lastRows.forEach(function(o){
+    var when=new Date(o.created_at);
+    var items=(o.items||[]).map(function(i){return i.qty+"x "+i.name}).join(" | ");
+    var row=[o.id,ymd(when),("0"+when.getHours()).slice(-2)+":"+("0"+when.getMinutes()).slice(-2),
+             o.table_no,o.status||"new",o.total,items,o.note||""];
+    lines.push(row.map(function(v){return '"'+String(v==null?"":v).replace(/"/g,'""')+'"'}).join(","));
+  });
+  var blob=new Blob(["\uFEFF"+lines.join("\n")],{type:"text/csv;charset=utf-8"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="orders_"+$("hFrom").value+"_"+$("hTo").value+".csv";
+  document.body.appendChild(a);a.click();a.remove();
+}
+
+/* ---------- Naya item ---------- */
 $("add").onclick=function(){
   var name=$("nName").value.trim(),price=parseInt($("nPrice").value,10),cat=$("nCat").value.trim();
   if(!name||!cat||!(price>0)){alert("Naam, category aur price zaroor bharein.");return}
   api("menu_items","POST",{name:name,category:cat,price:price,description:$("nDesc").value.trim(),veg:$("nVeg").value==="true"})
-  .then(function(){["nName","nCat","nPrice","nDesc"].forEach(function(i){$(i).value=""});loadMenu()})
+  .then(function(){
+    ["nName","nCat","nPrice","nDesc"].forEach(function(i){$(i).value=""});
+    loadMenu();
+  })
   .catch(function(){alert("Item nahi juda. Dobara try karein.")});
 };
+
+/* ---------- Menu actions ---------- */
 document.addEventListener("click",function(e){
   var t=e.target,id;
   if(id=t.dataset.save){
@@ -122,6 +331,10 @@ document.addEventListener("click",function(e){
     if(confirm("Is item ko hamesha ke liye hata dein?"))api("menu_items?id=eq."+id,"DELETE").then(loadMenu);
   }
 });
+
+/* ---------- Shuru ---------- */
+if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
+ensureToken().then(showApp).catch(function(){});
 </script>
 </body>
 </html>
