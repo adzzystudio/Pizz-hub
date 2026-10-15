@@ -137,6 +137,32 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
 .tb .amt{font-size:20px;font-weight:800;color:var(--brand);margin-top:2px}
 .tb small{color:var(--mute);font-size:13px}
 
+/* ---------- Table tiles + popup ---------- */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.tile{border:2px solid var(--line);background:#fff;border-radius:14px;padding:12px 8px;text-align:center;color:var(--ink);display:flex;flex-direction:column;gap:2px}
+.tile b{font-size:16px}
+.tile .amt{font-size:18px;font-weight:800;color:var(--mute)}
+.tile small{color:var(--mute);font-size:12px}
+.tile.served{background:#eef6f2;border-color:#cfe3da}
+.tile.served .amt{color:var(--ready)}
+.tile.active{background:var(--accent);border-color:#d9861a;color:#1b2523;animation:pulse 1.4s ease-in-out infinite}
+.tile.active .amt,.tile.active small{color:#1b2523}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(242,163,58,.7)}50%{box-shadow:0 0 0 8px rgba(242,163,58,0)}}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal.show{display:flex}
+.mbox{background:#fff;border-radius:18px;width:100%;max-width:420px;max-height:85vh;overflow:auto;padding:20px}
+.mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.mhead h3{margin:0;font-size:22px}
+.mstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.mstats div{background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+.mstats b{display:block;font-size:20px}
+.mstats span{font-size:12px;color:var(--mute)}
+.mstats .bigbill b{color:var(--ready)}
+.mlist{list-style:none;margin:0 0 12px;padding:0}
+.mlist li{display:flex;justify-content:space-between;padding:8px 0;border-top:1px dashed var(--line);font-size:16px}
+.mlist li b{color:var(--brand)}
+.mnote{background:#fff8e6;color:#7a5200;border-radius:10px;padding:8px 10px;font-size:14px;margin-bottom:8px}
+
 /* ---------- Bottom nav (mobile) ---------- */
 .bottom{display:none}
 
@@ -221,8 +247,9 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
           <div class="stat c"><b id="sTomorrow">0</b><span>Kal ke orders</span></div>
         </div>
         <div class="card">
-          <h3>Aaj ka table-wise bill</h3>
-          <div class="tbills" id="tblToday"></div>
+          <h3>Tables</h3>
+          <p class="muted" style="margin-bottom:12px">Naye order wali table orange ho jati hai. Table par tap karke items aur bill dekhein.</p>
+          <div class="tiles" id="tblToday"></div>
         </div>
         <div class="card">
           <h3>Abhi chal rahe orders</h3>
@@ -338,6 +365,14 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
   <button data-go="settings"><span class="ic">⚙️</span>Settings</button>
 </nav>
 
+<!-- TABLE POPUP -->
+<div class="modal" id="tmodal">
+  <div class="mbox">
+    <div class="mhead"><h3 id="tmTitle">Table</h3><button class="btn ghost small" data-close="1">Band karo</button></div>
+    <div id="tmBody"></div>
+  </div>
+</div>
+
 <script>
 var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
 var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
@@ -357,6 +392,40 @@ function addDays(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x}
 function toEmail(u){u=u.trim().toLowerCase();return u.indexOf("@")>-1?u:u+"@pizzhub.app"}
 function stLabel(s){return {"new":"Naya","preparing":"Bana rahe","ready":"Ready","done":"Served"}[s]||s}
 
+var TABLE_COUNT=12,openTbl=null;
+function tableTiles(rows){
+  var by={};
+  rows.forEach(function(o){var k=String(o.table_no);(by[k]=by[k]||[]).push(o)});
+  var keys=[];for(var i=1;i<=TABLE_COUNT;i++)keys.push(String(i));
+  Object.keys(by).forEach(function(k){if(keys.indexOf(k)<0)keys.push(k)});
+  return keys.map(function(k){
+    var list=by[k]||[];
+    var act=list.filter(function(o){return (o.status||"new")!=="done"});
+    var sum=list.reduce(function(a,o){return a+(Number(o.total)||0)},0);
+    var cls=act.length?" active":(list.length?" served":"");
+    var sub=act.length?act.length+" order chal rahe":(list.length?"Served ✓":"Khali");
+    return '<button class="tile'+cls+'" data-tbl="'+esc(k)+'"><b>Table '+esc(k)+'</b><span class="amt">'+(list.length?rs(sum):"—")+'</span><small>'+sub+'</small></button>';
+  }).join("");
+}
+function openTable(k){openTbl=k;renderTable();$("tmodal").classList.add("show")}
+function closeTable(){openTbl=null;$("tmodal").classList.remove("show")}
+function renderTable(){
+  var list=todayRows.filter(function(o){return String(o.table_no)===openTbl});
+  var items={},cnt=0,sum=0,notes=[];
+  list.forEach(function(o){
+    sum+=Number(o.total)||0;
+    if(o.note)notes.push(o.note);
+    (o.items||[]).forEach(function(i){var q=Number(i.qty)||1;items[i.name]=(items[i.name]||0)+q;cnt+=q});
+  });
+  var names=Object.keys(items);
+  $("tmTitle").textContent="Table "+openTbl;
+  $("tmBody").innerHTML=list.length
+    ? '<div class="mstats"><div><b>'+cnt+'</b><span>Items</span></div><div><b>'+list.length+'</b><span>Orders</span></div><div class="bigbill"><b>'+rs(sum)+'</b><span>Total bill</span></div></div>'+
+      '<ul class="mlist">'+names.map(function(n){return '<li><span>'+esc(n)+'</span><b>'+items[n]+'×</b></li>'}).join("")+'</ul>'+
+      notes.map(function(n){return '<div class="mnote">Note: '+esc(n)+'</div>'}).join("")+
+      '<p class="muted">Ye record aapke History page mein bhi save rehta hai.</p>'
+    : '<p class="muted">Aaj is table se koi order nahi aaya.</p>';
+}
 function tableBill(rows){
   var by={};
   rows.forEach(function(o){var k=String(o.table_no);if(!by[k])by[k]={n:0,sum:0};by[k].n++;by[k].sum+=Number(o.total)||0});
@@ -457,7 +526,8 @@ function loadToday(){
     $("cToday").textContent=active.length;
     $("mToday").textContent=active.length;
     $("mToday").hidden=!active.length;
-    $("tblToday").innerHTML=tableBill(rows);
+    $("tblToday").innerHTML=tableTiles(rows);
+    if(openTbl!==null)renderTable();
     $("dashList").innerHTML=active.length?active.map(orderCard).join(""):'<div class="empty">Abhi koi order chal nahi raha.</div>';
     var list=todayFilter?rows.filter(function(o){return (o.status||"new")===todayFilter}):rows;
     $("todayList").innerHTML=list.length?list.slice().reverse().map(orderCard).join(""):'<div class="empty">Is filter mein koi order nahi.</div>';
@@ -589,6 +659,8 @@ function toggleShop(){
 document.addEventListener("click",function(e){
   var t=e.target.closest("button,[data-go]");
   if(!t)return;
+  if(t.dataset.tbl){openTable(t.dataset.tbl);return}
+  if(t.dataset.close){closeTable();return}
   if(t.dataset.go){go(t.dataset.go);return}
   if(t.dataset.next){
     t.disabled=true;
@@ -612,6 +684,8 @@ document.addEventListener("click",function(e){
     if(confirm("Is item ko hamesha ke liye hata dein?"))api("menu_items?id=eq."+id,"DELETE").then(loadMenu);
   }
 });
+
+$("tmodal").onclick=function(e){if(e.target===this)closeTable()};
 
 /* ---------- Auto refresh (har 15 second) ---------- */
 setInterval(function(){
