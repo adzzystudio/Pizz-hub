@@ -1,14 +1,13 @@
 {
+  "id": "/kitchen.html",
   "name": "Pizza Hub Kitchen",
   "short_name": "Kitchen",
   "start_url": "/kitchen.html",
-  "scope": "/",
+  "scope": "/kitchen.html",
   "display": "standalone",
-  "orientation": "any",
   "background_color": "#101716",
   "theme_color": "#101716",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" }
   ]
 }
