@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Login Test</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; }
+  input, button { width: 100%; padding: 12px; margin: 6px 0; font-size: 16px; }
+  #msg { margin-top: 15px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h2>Owner Login</h2>
+<input id="email" type="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button id="loginBtn">Login</button>
+<div id="msg"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const sb = supabase.createClient('https://pzlmykxqqtilvijntbpa.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6bG15a3hxcXRpbHZpam50YnBhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzNTM0NTYsImV4cCI6MjEwNjkyOTQ1Nn0.sbss721KvyI173Xpa-oP3H3tl2vtEnGtPyw0ouTVkIU');
+  const msg = document.getElementById('msg');
+
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    msg.textContent = 'Login ho raha hai...';
+
+    const { data, error } = await sb.auth.signInWithPassword({
+      email: document.getElementById('email').value.trim(),
+      password: document.getElementById('password').value
+    });
+    if (error) { msg.textContent = 'Login fail: ' + error.message; return; }
+
+    const { data: staff, error: sErr } = await sb
+      .from('staff')
+      .select('role, name, restaurant_id')
+      .eq('id', data.user.id)
+      .maybeSingle();
+
+    if (sErr) { msg.textContent = 'Staff check error: ' + sErr.message; return; }
+    if (!staff) { msg.textContent = 'Login ho gaya, lekin staff row nahi mili.'; return; }
+    if (staff.role !== 'admin') { msg.textContent = 'Ye account admin nahi hai.'; return; }
+
+    msg.textContent = 'Admin login successful!\nRestaurant ID: ' + staff.restaurant_id;
+  });
+</script>
+</body>
+</html>
