@@ -3,46 +3,152 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin Login Test</title>
+<title>Pizz Hub - Owner Admin</title>
 <style>
-  body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; }
-  input, button { width: 100%; padding: 12px; margin: 6px 0; font-size: 16px; }
-  #msg { margin-top: 15px; white-space: pre-wrap; }
+  body { font-family: sans-serif; padding: 16px; max-width: 700px; margin: auto; background: #f3f6f5; }
+  h2, h3 { margin: 12px 0 6px; }
+  input, select, button { padding: 10px; margin: 4px 0; font-size: 15px; }
+  input, select { width: 100%; box-sizing: border-box; }
+  button { background: #0f4c45; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+  .card { background: #fff; padding: 12px; border-radius: 8px; margin: 8px 0; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  #msg { margin-top: 10px; white-space: pre-wrap; }
+  .hidden { display: none; }
 </style>
 </head>
 <body>
-<h2>Owner Login</h2>
-<input id="email" type="email" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
-<button id="loginBtn">Login</button>
-<div id="msg"></div>
+
+<div id="loginBox">
+  <h2>Owner Login</h2>
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button id="loginBtn">Login</button>
+  <div id="msg"></div>
+</div>
+
+<div id="adminBox" class="hidden">
+  <div class="row">
+    <h2 id="title">Pizz Hub</h2>
+    <button id="logoutBtn">Logout</button>
+  </div>
+
+  <h3>Naya menu item</h3>
+  <div class="card">
+    <input id="mName" placeholder="Item naam (jaise Creamy Burger)">
+    <input id="mPrice" type="number" placeholder="Price (₹)">
+    <input id="mCategory" placeholder="Category (jaise Burger)">
+    <label><input id="mVeg" type="checkbox" style="width:auto"> Veg</label>
+    <button id="addItemBtn">Add item</button>
+  </div>
+
+  <h3>Menu</h3>
+  <div id="menuList"></div>
+
+  <h3>Latest orders</h3>
+  <div id="orderList"></div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const sb = supabase.createClient('https://pzlmykxqqtilvijntbpa.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6bG15a3hxcXRpbHZpam50YnBhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzNTM0NTYsImV4cCI6MjEwNjkyOTQ1Nn0.sbss721KvyI173Xpa-oP3H3tl2vtEnGtPyw0ouTVkIU');
-  const msg = document.getElementById('msg');
+  const RESTAURANT_SLUG = 'pizz-hub';
+  let restaurantId = null;
 
-  document.getElementById('loginBtn').addEventListener('click', async () => {
+  const $ = (id) => document.getElementById(id);
+  const msg = $('msg');
+
+  // Login
+  $('loginBtn').addEventListener('click', async () => {
     msg.textContent = 'Login ho raha hai...';
-
     const { data, error } = await sb.auth.signInWithPassword({
-      email: document.getElementById('email').value.trim(),
-      password: document.getElementById('password').value
+      email: $('email').value.trim(),
+      password: $('password').value
     });
     if (error) { msg.textContent = 'Login fail: ' + error.message; return; }
 
     const { data: staff, error: sErr } = await sb
-      .from('staff')
-      .select('role, name, restaurant_id')
-      .eq('id', data.user.id)
-      .maybeSingle();
+      .from('staff').select('role, restaurant_id, name')
+      .eq('id', data.user.id).maybeSingle();
 
-    if (sErr) { msg.textContent = 'Staff check error: ' + sErr.message; return; }
-    if (!staff) { msg.textContent = 'Login ho gaya, lekin staff row nahi mili.'; return; }
-    if (staff.role !== 'admin') { msg.textContent = 'Ye account admin nahi hai.'; return; }
+    if (sErr || !staff) { msg.textContent = 'Staff row nahi mili.'; await sb.auth.signOut(); return; }
+    if (staff.role !== 'admin') { msg.textContent = 'Ye account admin nahi hai.'; await sb.auth.signOut(); return; }
 
-    msg.textContent = 'Admin login successful!\nRestaurant ID: ' + staff.restaurant_id;
+    restaurantId = staff.restaurant_id;
+    $('loginBox').classList.add('hidden');
+    $('adminBox').classList.remove('hidden');
+    loadMenu();
+    loadOrders();
   });
+
+  $('logoutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    location.reload();
+  });
+
+  // Menu load
+  async function loadMenu() {
+    const { data, error } = await sb.from('menu_items')
+      .select('*').eq('restaurant_id', restaurantId).order('id');
+    const box = $('menuList');
+    box.innerHTML = '';
+    if (error) { box.textContent = 'Error: ' + error.message; return; }
+
+    data.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'card row';
+      div.innerHTML = `<span>${item.name} - ₹${item.price} (${item.category || ''}) ${item.veg ? '🟢' : ''}</span>`;
+      const btn = document.createElement('button');
+      btn.textContent = item.is_available === false ? 'Available karein' : 'Unavailable karein';
+      btn.onclick = async () => {
+        await sb.from('menu_items')
+          .update({ is_available: !(item.is_available === false) ? false : true })
+          .eq('id', item.id).eq('restaurant_id', restaurantId);
+        loadMenu();
+      };
+      div.appendChild(btn);
+      box.appendChild(div);
+    });
+  }
+
+  // Naya item add
+  $('addItemBtn').addEventListener('click', async () => {
+    const name = $('mName').value.trim();
+    const price = parseFloat($('mPrice').value);
+    if (!name || isNaN(price)) { alert('Naam aur price daalein'); return; }
+
+    const { error } = await sb.from('menu_items').insert({
+      restaurant_id: restaurantId,
+      name,
+      price,
+      category: $('mCategory').value.trim(),
+      veg: $('mVeg').checked
+    });
+    if (error) { alert('Error: ' + error.message); return; }
+
+    $('mName').value = ''; $('mPrice').value = ''; $('mCategory').value = '';
+    $('mVeg').checked = false;
+    loadMenu();
+  });
+
+  // Orders load
+  async function loadOrders() {
+    const { data, error } = await sb.from('orders')
+      .select('*').eq('restaurant_id', restaurantId)
+      .order('created_at', { ascending: false }).limit(30);
+    const box = $('orderList');
+    box.innerHTML = '';
+    if (error) { box.textContent = 'Error: ' + error.message; return; }
+
+    data.forEach(o => {
+      const div = document.createElement('div');
+      div.className = 'card';
+      const items = Array.isArray(o.items)
+        ? o.items.map(i => i.name || JSON.stringify(i)).join(', ')
+        : JSON.stringify(o.items);
+      div.innerHTML = `<b>Table ${o.table_no || '-'}</b> | ₹${o.total} | ${o.status}<br><small>${items}</small>`;
+      box.appendChild(div);
+    });
+  }
 </script>
 </body>
 </html>
