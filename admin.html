@@ -74,6 +74,8 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
 .stat.c{border-left-color:var(--ready)}
 .stat b{display:block;font-size:26px}
 .stat span{color:var(--mute);font-size:14px}
+.stat.clickable{cursor:pointer}
+.stat.clickable:active{transform:scale(.98)}
 .muted{color:var(--mute);font-size:14px;margin:0}
 
 /* ---------- Order cards ---------- */
@@ -250,10 +252,10 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
       <!-- DASHBOARD -->
       <section class="page show" id="p-dash">
         <div class="stats">
-          <div class="stat"><b id="sOrders">0</b><span>Aaj ke orders</span></div>
-          <div class="stat a"><b id="sSales">₹0</b><span>Aaj ki bikri (paid)</span></div>
-          <div class="stat b"><b id="sActive">0</b><span>Abhi chal rahe</span></div>
-          <div class="stat c"><b id="sTomorrow">0</b><span>Kal ke orders</span></div>
+          <div class="stat clickable" data-go="today"><b id="sOrders">0</b><span>Aaj ke orders</span></div>
+          <div class="stat a clickable" data-go="report"><b id="sSales">₹0</b><span>Aaj ki bikri (paid)</span></div>
+          <div class="stat b clickable" data-go="today"><b id="sActive">0</b><span>Abhi chal rahe</span></div>
+          <div class="stat c clickable" data-go="tomorrow"><b id="sTomorrow">0</b><span>Kal ke orders</span></div>
         </div>
         <div class="card">
           <h3>Tables</h3>
@@ -663,7 +665,7 @@ function go(page){
   document.querySelectorAll(".page").forEach(function(p){p.classList.remove("show")});
   $("p-"+page).classList.add("show");
   $("title").textContent=TITLES[page];
-  document.querySelectorAll("[data-go]").forEach(function(b){b.classList.toggle("active",b.dataset.go===page)});
+  document.querySelectorAll(".nav-btn[data-go],.bottom button[data-go]").forEach(function(b){b.classList.toggle("active",b.dataset.go===page)});
   refreshCurrent();
 }
 function refreshCurrent(){
