@@ -41,6 +41,7 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
 .btn.small{padding:8px 12px;font-size:14px;border-radius:10px}
 .btn.block{width:100%}
 .btn:disabled{opacity:.5}
+.btn[hidden]{display:none}
 
 /* ---------- Shell ---------- */
 .app{display:none;min-height:100%}
@@ -60,6 +61,7 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
 .topbar{background:#fff;border-bottom:1px solid var(--line);padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:5}
 .topbar h2{margin:0;font-size:21px}
 .topbar .sub{color:var(--mute);font-size:14px}
+.topbar-btns{display:flex;gap:8px}
 .content{padding:20px 22px 110px;max-width:1100px;width:100%}
 .page{display:none}
 .page.show{display:block}
@@ -244,7 +246,10 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
         <h2 id="title">Dashboard</h2>
         <div class="sub" id="subtitle"></div>
       </div>
-      <button class="btn ghost small" onclick="refreshCurrent()">↻ Refresh</button>
+      <div class="topbar-btns">
+        <button class="btn ghost small" id="backBtn" onclick="go('dash')" hidden>← Dashboard</button>
+        <button class="btn ghost small" onclick="refreshCurrent()">↻ Refresh</button>
+      </div>
     </div>
 
     <div class="content">
@@ -665,6 +670,7 @@ function go(page){
   document.querySelectorAll(".page").forEach(function(p){p.classList.remove("show")});
   $("p-"+page).classList.add("show");
   $("title").textContent=TITLES[page];
+  $("backBtn").hidden=(page==="dash");
   document.querySelectorAll(".nav-btn[data-go],.bottom button[data-go]").forEach(function(b){b.classList.toggle("active",b.dataset.go===page)});
   refreshCurrent();
 }
