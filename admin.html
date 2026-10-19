@@ -478,7 +478,8 @@ function tableTiles(){
   }).join("");
 }
 function loadLive(){
-  api("orders?select=*&paid=eq.false&order=created_at.asc").then(function(rows){
+  var s=dayStart(new Date());
+  api("orders?select=*&paid=eq.false&created_at=gte."+encodeURIComponent(s.toISOString())+"&order=created_at.asc").then(function(rows){
     if(!rows)return;
     liveRows=rows;
     var maxId=rows.reduce(function(a,o){return Math.max(a,o.id)},0);
