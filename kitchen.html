@@ -2,106 +2,205 @@
 <html lang="hi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pizza Hub - Kitchen</title>
-<link rel="manifest" href="/manifest-kitchen.json">
-<meta name="theme-color" content="#101716">
-<meta name="apple-mobile-web-app-title" content="Kitchen">
-<link rel="apple-touch-icon" href="/icon-192.png">
 <style>
-:root{--bg:#101716;--card:#18221f;--ink:#e8efed;--mute:#93a39e;--line:#2a3733;--new:#f2a33a;--prep:#3b82f6;--ready:#1f9d55;--red:#e53935}
+:root{--bg:#0f1716;--card:#18221f;--ink:#e8efed;--mute:#93a39e;--line:#2a3733;--new:#f2a33a;--prep:#3b82f6;--brand:#0f4c45;--ok:#1f9d55;--bad:#c0392b}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:17px;min-height:100vh}
 button,input{font:inherit}
-.login{max-width:340px;margin:12vh auto;padding:20px}
-.login h1{margin:0 0 16px}
-input{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
-.btn{width:100%;padding:12px;border:0;border-radius:10px;background:var(--new);color:#1b2523;font-weight:700;cursor:pointer}
-.err{color:#ff8a80;min-height:20px;font-size:14px}
-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg)}
-header h1{margin:0;font-size:20px}
-.cnt{color:var(--mute);font-size:14px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:12px}
-.card{background:var(--card);border:1px solid var(--line);border-top:5px solid var(--new);border-radius:12px;padding:14px}
-.card.preparing{border-top-color:var(--prep)}.card.ready{border-top-color:var(--ready)}
-.top{display:flex;justify-content:space-between;align-items:baseline}
-.tbl{font-size:24px;font-weight:800}
-.age{color:var(--mute);font-size:13px}
-ul{list-style:none;padding:0;margin:10px 0}
-li{padding:4px 0;font-size:17px}
+button{cursor:pointer}
+.hidden{display:none!important}
+
+/* Login */
+.login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.lbox{width:100%;max-width:360px;background:var(--card);border-radius:18px;padding:24px}
+.lbox h1{margin:0 0 16px;font-size:22px}
+.lbox input{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-bottom:12px;font-size:16px}
+.lbox button{width:100%;padding:14px;border:0;border-radius:12px;background:var(--ok);color:#fff;font-weight:700;font-size:16px}
+.err{color:#ff8a80;min-height:22px;font-size:14px;margin-bottom:6px}
+
+/* Header */
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+header h2{margin:0;font-size:20px}
+header small{color:var(--mute)}
+.hbtns{display:flex;gap:8px}
+.hbtns button{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:14px}
+#soundBtn{background:var(--new);color:#1b2523;border:0;font-weight:700}
+#soundBtn.on{background:var(--ok);color:#fff}
+
+/* Orders */
+main{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{background:var(--card);border-radius:16px;padding:16px;border-top:6px solid var(--new);display:flex;flex-direction:column;gap:10px}
+.card.preparing{border-top-color:var(--prep)}
+.chead{display:flex;justify-content:space-between;align-items:center}
+.tname{font-size:22px;font-weight:800}
+.ago{color:var(--mute);font-size:14px}
+.badge{font-size:12px;font-weight:800;padding:4px 10px;border-radius:99px;background:#3a2c12;color:var(--new)}
+.card.preparing .badge{background:#14284a;color:var(--prep)}
+ul{list-style:none;margin:0;padding:8px 0;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line)}
+li{display:flex;justify-content:space-between;padding:6px 0;font-size:18px}
 li b{color:var(--new)}
-.note{background:#2a2414;color:#ffd48a;border-radius:8px;padding:8px;font-size:14px;margin-bottom:10px}
-.act{padding:12px;width:100%;border:0;border-radius:10px;font-weight:700;cursor:pointer;color:#fff;background:var(--red)}
-.card.preparing .act,.card.ready .act{background:var(--ready)}
-.empty{color:var(--mute);text-align:center;padding:60px 16px}
+.note{background:#3a2c12;color:#ffd58a;border-radius:10px;padding:8px 10px;font-size:15px}
+.act{width:100%;padding:16px;border:0;border-radius:14px;font-weight:800;font-size:18px;color:#fff;background:var(--prep)}
+.card.preparing .act{background:var(--ok)}
+.act:disabled{opacity:.5}
+.empty{grid-column:1/-1;text-align:center;color:var(--mute);padding:60px 10px;font-size:18px}
 </style>
 </head>
 <body>
+
 <div class="login" id="login">
-  <h1>Kitchen login</h1>
-  <input id="em" type="email" placeholder="Email" autocomplete="username">
-  <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
-  <div class="err" id="err"></div>
-  <button class="btn" id="go">Login</button>
+  <div class="lbox">
+    <h1>Kitchen Login</h1>
+    <input id="em" type="email" placeholder="Email" autocomplete="username">
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <div class="err" id="err"></div>
+    <button id="go">Login</button>
+  </div>
 </div>
-<div id="app" hidden>
-  <header><h1>Kitchen orders</h1><span class="cnt" id="cnt"></span></header>
-  <div class="grid" id="grid"></div>
+
+<div id="app" class="hidden">
+  <header>
+    <div>
+      <h2>Kitchen orders</h2>
+      <small id="count">Loading...</small>
+    </div>
+    <div class="hbtns">
+      <button id="soundBtn">🔔 Sound ON karein</button>
+      <button id="logout">Logout</button>
+    </div>
+  </header>
+  <main id="list"></main>
 </div>
+
+<audio id="alarm" preload="auto" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQQAAAAA"></audio>
+
 <script>
 var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
 var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
-var token=null,lastId=null,ctx=null,timer=null;
-var NEXT={"new":["preparing","Order"],"preparing":["done","Done"],"ready":["done","Done"]};
-function $(i){return document.getElementById(i)}
-function H(){return {"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json"}}
+var KEY="kitchenSession";
+var token=null,uid=null,soundOn=false,lastMax=0,firstLoad=true,actx=null;
+var NEXT={"new":{to:"preparing",label:"Order banaya · Shuru karo"},"preparing":{to:"ready",label:"Done ✓"}};
 
-$("go").onclick=function(){
-  try{ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
-  $("err").textContent="";
-  fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
-    body:JSON.stringify({email:$("em").value.trim(),password:$("pw").value})})
-  .then(function(r){return r.json()})
-  .then(function(d){
-    if(!d.access_token)throw new Error();
-    token=d.access_token;$("login").hidden=true;$("app").hidden=false;load();timer=setInterval(load,4000);
-  }).catch(function(){$("err").textContent="Email ya password galat hai."});
-};
-function beep(){
-  if(!ctx)return;
-  [0,.25,.5].forEach(function(t){
-    var o=ctx.createOscillator(),g=ctx.createGain();
-    o.frequency.value=880;o.connect(g);g.connect(ctx.destination);
-    g.gain.setValueAtTime(.25,ctx.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.2);
-    o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.2);
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function hm(d){return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2)}
+function mins(iso){return Math.max(0,Math.round((Date.now()-new Date(iso).getTime())/60000))}
+
+/* ---------- Session ---------- */
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){return null}}
+function save(d){
+  var old=load()||{};
+  var s={access_token:d.access_token,refresh_token:d.refresh_token,uid:(d.user&&d.user.id)||old.uid,expires_at:Date.now()+(d.expires_in||3600)*1000-60000};
+  localStorage.setItem(KEY,JSON.stringify(s));token=s.access_token;uid=s.uid;
+}
+function ensureToken(){
+  var s=load();
+  if(s&&s.expires_at>Date.now()){token=s.access_token;uid=s.uid;return Promise.resolve()}
+  if(!s||!s.refresh_token)return Promise.reject("auth");
+  return fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:s.refresh_token})})
+    .then(function(r){return r.json()}).then(function(d){if(!d.access_token)throw "auth";save(d)});
+}
+function api(path,method,body){
+  method=method||"GET";
+  return ensureToken().then(function(){
+    var h={"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json"};
+    if(method!=="GET")h.Prefer="return=minimal";
+    return fetch(SB_URL+"/rest/v1/"+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined});
+  }).then(function(r){
+    if(r.status===401)throw "auth";
+    if(!r.ok)throw new Error(r.status);
+    return method==="GET"?r.json():null;
   });
 }
-function ago(ts){var m=Math.max(0,Math.round((Date.now()-new Date(ts))/60000));return m<1?"abhi":m+" min pehle"}
-function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
-function load(){
-  fetch(SB_URL+"/rest/v1/orders?status=neq.done&select=*&order=created_at.asc",{headers:H()})
-  .then(function(r){
-    if(r.status===401){clearInterval(timer);$("app").hidden=true;$("login").hidden=false;$("err").textContent="Session khatam. Dobara login karein.";throw 0}
-    return r.json();
-  }).then(function(rows){
-    var maxId=rows.reduce(function(a,o){return Math.max(a,o.id)},0);
-    if(lastId!==null&&maxId>lastId)beep();
-    lastId=Math.max(lastId||0,maxId);
-    $("cnt").textContent=rows.length+" chal rahe hain";
-    $("grid").innerHTML=rows.length?rows.map(function(o){
-      var n=NEXT[o.status]||NEXT["new"];
-      return '<div class="card '+esc(o.status)+'"><div class="top"><span class="tbl">Table '+esc(o.table_no)+'</span><span class="age">'+ago(o.created_at)+'</span></div><ul>'+
-        (o.items||[]).map(function(i){return '<li><b>'+esc(i.qty)+'×</b> '+esc(i.name)+'</li>'}).join("")+'</ul>'+
-        (o.note?'<div class="note">'+esc(o.note)+'</div>':'')+
-        '<button class="act" data-id="'+o.id+'" data-st="'+n[0]+'">'+n[1]+'</button></div>';
-    }).join(""):'<div class="empty">Abhi koi order nahi. Naye order yahin dikhenge.</div>';
-  }).catch(function(){});
+
+/* ---------- Login + role check (sirf kitchen role) ---------- */
+function checkKitchen(){
+  return api("staff?select=role,restaurant_id&id=eq."+uid).then(function(rows){
+    var st=rows&&rows[0];
+    return !!st&&st.role==="kitchen";
+  });
 }
-document.addEventListener("click",function(e){
-  var b=e.target.closest(".act");if(!b)return;
+function showLogin(msg){$("app").classList.add("hidden");$("login").classList.remove("hidden");$("err").textContent=msg||""}
+function showApp(){
+  $("login").classList.add("hidden");$("app").classList.remove("hidden");
+  loadOrders();
+}
+$("go").onclick=function(){
+  $("err").textContent="";
+  var email=$("em").value.trim().toLowerCase();
+  fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:email,password:$("pw").value})})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(!d.access_token)throw "login";
+    save(d);
+    return checkKitchen();
+  })
+  .then(function(ok){
+    if(!ok){localStorage.removeItem(KEY);token=null;$("err").textContent="Ye account kitchen ka nahi hai.";return}
+    showApp();
+  })
+  .catch(function(e){$("err").textContent=(e==="login")?"Email ya password galat hai.":"Login fail hua. Dobara try karein."});
+};
+$("logout").onclick=function(){localStorage.removeItem(KEY);location.reload()};
+
+/* ---------- Sound ---------- */
+$("soundBtn").onclick=function(){
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==="suspended")actx.resume()}catch(e){}
+  $("alarm").play().then(function(){$("alarm").pause();$("alarm").currentTime=0}).catch(function(){});
+  soundOn=true;this.textContent="🔔 Sound ON hai";this.classList.add("on");
+};
+function beep(){
+  if(!soundOn||!actx)return;
+  [0,.3,.6].forEach(function(t){
+    var o=actx.createOscillator(),g=actx.createGain();
+    o.frequency.value=880;o.connect(g);g.connect(actx.destination);
+    g.gain.setValueAtTime(.3,actx.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+t+.25);
+    o.start(actx.currentTime+t);o.stop(actx.currentTime+t+.25);
+  });
+  if(navigator.vibrate)navigator.vibrate([300,150,300]);
+}
+
+/* ---------- Orders ---------- */
+function loadOrders(){
+  var s=new Date();s.setHours(0,0,0,0);
+  api("orders?select=*&status=in.(new,preparing)&created_at=gte."+encodeURIComponent(s.toISOString())+"&order=created_at.asc")
+  .then(function(rows){
+    var max=rows.reduce(function(a,o){return Math.max(a,o.id)},0);
+    if(!firstLoad&&max>lastMax)beep();
+    lastMax=Math.max(lastMax,max);firstLoad=false;
+    $("count").textContent=rows.length+" order chal rahe hain";
+    $("list").innerHTML=rows.length?rows.map(card).join(""):'<div class="empty">Abhi koi order nahi hai</div>';
+  }).catch(function(e){
+    if(e==="auth"){showLogin("Session khatam. Dobara login karein.")}
+  });
+}
+function card(o){
+  var n=NEXT[o.status]||NEXT["new"];
+  var items=(o.items||[]).map(function(i){return '<li><span>'+esc(i.name)+'</span><b>'+esc(i.qty)+'×</b></li>'}).join("");
+  return '<div class="card '+esc(o.status)+'">'+
+    '<div class="chead"><span class="tname">Table '+esc(o.table_no)+'</span><span class="badge">'+(o.status==="new"?"Naya":"Bana rahe")+'</span></div>'+
+    '<div class="ago">#'+o.id+' · '+hm(new Date(o.created_at))+' · '+mins(o.created_at)+' min pehle</div>'+
+    '<ul>'+items+'</ul>'+
+    (o.note?'<div class="note">Note: '+esc(o.note)+'</div>':'')+
+    '<button class="act" data-id="'+o.id+'" data-to="'+n.to+'">'+n.label+'</button>'+
+    '</div>';
+}
+$("list").onclick=function(e){
+  var b=e.target.closest("button.act");if(!b)return;
   b.disabled=true;
-  fetch(SB_URL+"/rest/v1/orders?id=eq."+b.dataset.id,{method:"PATCH",headers:H(),body:JSON.stringify({status:b.dataset.st})}).then(load);
-});
+  api("orders?id=eq."+b.dataset.id,"PATCH",{status:b.dataset.to})
+  .then(loadOrders)
+  .catch(function(){b.disabled=false;alert("Update nahi hua. Dobara try karein.")});
+};
+
+/* ---------- Start ---------- */
+setInterval(function(){if(token&&!$("app").classList.contains("hidden"))loadOrders()},5000);
+ensureToken()
+  .then(function(){return checkKitchen()})
+  .then(function(ok){if(ok)showApp();else{localStorage.removeItem(KEY);showLogin("")}})
+  .catch(function(){showLogin("")});
 </script>
 </body>
 </html>
