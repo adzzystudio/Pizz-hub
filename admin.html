@@ -234,6 +234,7 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
     <button class="nav-btn" data-go="history"><span class="ic">🗂️</span>History</button>
     <button class="nav-btn" data-go="report"><span class="ic">💰</span>Sale report</button>
     <button class="nav-btn" data-go="menu"><span class="ic">📋</span>Menu aur stock</button>
+    <button class="nav-btn" data-go="staff"><span class="ic">👥</span>Staff</button>
     <button class="nav-btn" data-go="settings"><span class="ic">⚙️</span>Settings</button>
     <div class="side-foot">
       <button class="nav-btn" onclick="logout()"><span class="ic">🚪</span>Logout</button>
@@ -367,6 +368,25 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
         </div>
       </section>
 
+      <!-- STAFF -->
+      <section class="page" id="p-staff">
+        <div class="card">
+          <h3>Naya staff jodein</h3>
+          <p class="muted" style="margin:0 0 12px">Pehle staff ka Supabase mein account hona chahiye. Yahan role chunkar code banayein, aur staff wo code apne account se daale.</p>
+          <div class="addform">
+            <label><span>Role</span>
+              <select id="sRole"><option value="kitchen">Kitchen (cook)</option><option value="waiter">Waiter</option></select>
+            </label>
+            <button class="btn block" id="sInvite">Code banayein</button>
+          </div>
+          <div id="sCode" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <h3>Staff list</h3>
+          <div id="staffList"></div>
+        </div>
+      </section>
+
       <!-- SETTINGS -->
       <section class="page" id="p-settings">
         <div class="card">
@@ -398,6 +418,7 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
   <button data-go="history"><span class="ic">🗂️</span>History</button>
   <button data-go="report"><span class="ic">💰</span>Report</button>
   <button data-go="menu"><span class="ic">📋</span>Menu</button>
+  <button data-go="staff"><span class="ic">👥</span>Staff</button>
   <button data-go="settings"><span class="ic">⚙️</span>Settings</button>
 </nav>
 
@@ -416,7 +437,7 @@ var SESSION_KEY="adminSession";
 var RESTAURANT_ID=null;
 var token=null,menu=[],todayRows=[],historyRows=[],currentPage="dash",todayFilter="",shopOpen=true;
 var NEXT={"new":["preparing","Banana shuru karo"],"preparing":["ready","Ready hai"],"ready":["done","Served"]};
-var TITLES={report:"Sale report",dash:"Dashboard",today:"Aaj ke orders",tomorrow:"Kal ke orders",history:"History",menu:"Menu aur stock",settings:"Settings"};
+var TITLES={report:"Sale report",dash:"Dashboard",today:"Aaj ke orders",tomorrow:"Kal ke orders",history:"History",menu:"Menu aur stock",staff:"Staff",settings:"Settings"};
 
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
@@ -680,6 +701,7 @@ function refreshCurrent(){
   if(currentPage==="tomorrow")loadTomorrow();
   if(currentPage==="history")loadHistory();
   if(currentPage==="menu")loadMenu();
+  if(currentPage==="staff")loadStaff();
   if(currentPage==="settings")loadSettings();
   loadTomorrowCount();
 }
@@ -808,6 +830,32 @@ $("add").onclick=function(){
   .catch(function(){alert("Item nahi juda. Dobara try karein.")});
 };
 
+/* ---------- Staff management ---------- */
+function rpcCall(fn,body){
+  return ensureToken().then(function(){
+    return fetch(SB_URL+"/rest/v1/rpc/"+fn,{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  }).then(function(r){
+    if(!r.ok)return r.text().then(function(t){throw new Error(t)});
+    return r.json().catch(function(){return null});
+  });
+}
+function loadStaff(){
+  api("staff?select=id,name,role&order=role").then(function(rows){
+    if(!rows)return;
+    var me=(loadSession()||{}).uid;
+    $("staffList").innerHTML=rows.length?rows.map(function(s){
+      var isMe=s.id===me;
+      return '<div class="mitem"><div class="n"><b>'+esc(s.name||"Naam nahi")+'</b><small>'+esc(s.role)+(isMe?' · (aap)':'')+'</small></div><div></div><div class="acts">'+
+        (isMe?'':'<button class="btn small danger" data-rm="'+s.id+'">Hatao</button>')+'</div></div>';
+    }).join(""):'<div class="empty">Abhi koi staff nahi.</div>';
+  }).catch(function(){});
+}
+$("sInvite").onclick=function(){
+  rpcCall("create_staff_invite",{p_role:$("sRole").value}).then(function(code){
+    $("sCode").innerHTML='<div class="card" style="margin:0"><b>Invite code:</b><div style="font-size:28px;font-weight:800;letter-spacing:3px;margin:6px 0">'+esc(code)+'</div><small class="muted">2 din tak valid hai, ek hi baar use hoga.</small></div>';
+  }).catch(function(e){alert("Code nahi bana: "+e.message)});
+};
+
 /* ---------- Settings (shop status) ---------- */
 function loadSettings(){
   api("settings?select=value&key=eq.shop_open").then(function(rows){
@@ -832,6 +880,11 @@ function toggleShop(){
 document.addEventListener("click",function(e){
   var t=e.target.closest("button,[data-go]");
   if(!t)return;
+  if(t.dataset.rm){
+    if(!confirm("Is staff ka access band kar dein?"))return;
+    rpcCall("remove_staff",{p_staff_id:t.dataset.rm}).then(loadStaff).catch(function(err){alert("Remove nahi hua: "+err.message)});
+    return;
+  }
   if(t.dataset.tbl){openTable(t.dataset.tbl);return}
   if(t.dataset.close){closeTable();return}
   if(t.dataset.pay){payTable();return}
