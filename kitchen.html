@@ -12,12 +12,17 @@ button,input{font:inherit}
 button{cursor:pointer}
 .hidden{display:none!important}
 
-/* Login */
+/* Login / Join */
 .login{min-height:100vh;display:grid;place-items:center;padding:20px}
 .lbox{width:100%;max-width:360px;background:var(--card);border-radius:18px;padding:24px}
-.lbox h1{margin:0 0 16px;font-size:22px}
+.lbox h1{margin:0 0 12px;font-size:22px}
 .lbox input{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-bottom:12px;font-size:16px}
-.lbox button{width:100%;padding:14px;border:0;border-radius:12px;background:var(--ok);color:#fff;font-weight:700;font-size:16px}
+.lbox > button{width:100%;padding:14px;border:0;border-radius:12px;background:var(--ok);color:#fff;font-weight:700;font-size:16px}
+.lbox .linkbtn{background:none;border:0;color:var(--mute);margin-top:12px;width:100%;font-size:14px;text-decoration:underline;padding:8px}
+.lbox .tabs{display:flex;gap:8px;margin-bottom:14px}
+.lbox .tabs button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);font-weight:700;font-size:15px}
+.lbox .tabs button.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.hint{color:var(--mute);font-size:14px;margin:0 0 12px}
 .err{color:#ff8a80;min-height:22px;font-size:14px;margin-bottom:6px}
 
 /* Header */
@@ -50,9 +55,15 @@ li b{color:var(--new)}
 </head>
 <body>
 
+<!-- LOGIN / SIGNUP -->
 <div class="login" id="login">
   <div class="lbox">
-    <h1>Kitchen Login</h1>
+    <h1>Kitchen</h1>
+    <div class="tabs">
+      <button id="tLogin" class="on">Login</button>
+      <button id="tSignup">Naya account</button>
+    </div>
+    <p class="hint" id="hint">Apna email aur password daalein</p>
     <input id="em" type="email" placeholder="Email" autocomplete="username">
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
     <div class="err" id="err"></div>
@@ -60,6 +71,20 @@ li b{color:var(--new)}
   </div>
 </div>
 
+<!-- JOIN (naye staff ke liye, admin ka code) -->
+<div class="login hidden" id="join">
+  <div class="lbox">
+    <h1>Restaurant se judein</h1>
+    <p class="hint">Admin se mila 8-character code daalein.</p>
+    <input id="jName" placeholder="Aapka naam">
+    <input id="jCode" placeholder="Invite code (jaise 22FFA818)" autocapitalize="characters">
+    <div class="err" id="jErr"></div>
+    <button id="joinBtn">Join karein</button>
+    <button class="linkbtn" id="jLogout">Logout</button>
+  </div>
+</div>
+
+<!-- KITCHEN -->
 <div id="app" class="hidden">
   <header>
     <div>
@@ -80,13 +105,14 @@ li b{color:var(--new)}
 var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
 var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
 var KEY="kitchenSession";
-var token=null,uid=null,soundOn=false,lastMax=0,firstLoad=true,actx=null;
+var token=null,uid=null,mode="login",soundOn=false,lastMax=0,firstLoad=true,actx=null;
 var NEXT={"new":{to:"preparing",label:"Order banaya · Shuru karo"},"preparing":{to:"ready",label:"Done ✓"}};
 
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function hm(d){return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2)}
 function mins(iso){return Math.max(0,Math.round((Date.now()-new Date(iso).getTime())/60000))}
+function show(id){["login","join","app"].forEach(function(x){$(x).classList.toggle("hidden",x!==id)})}
 
 /* ---------- Session ---------- */
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){return null}}
@@ -102,10 +128,11 @@ function ensureToken(){
   return fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:s.refresh_token})})
     .then(function(r){return r.json()}).then(function(d){if(!d.access_token)throw "auth";save(d)});
 }
+function hdr(){return {"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json"}}
 function api(path,method,body){
   method=method||"GET";
   return ensureToken().then(function(){
-    var h={"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json"};
+    var h=hdr();
     if(method!=="GET")h.Prefer="return=minimal";
     return fetch(SB_URL+"/rest/v1/"+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined});
   }).then(function(r){
@@ -115,34 +142,84 @@ function api(path,method,body){
   });
 }
 
-/* ---------- Login + role check (sirf kitchen role) ---------- */
-function checkKitchen(){
-  return api("staff?select=role,restaurant_id&id=eq."+uid).then(function(rows){
+/* ---------- Route: kaun kis screen par jaye ---------- */
+function route(){
+  if(!load()){show("login");return Promise.resolve()}
+  return ensureToken().then(function(){
+    return api("staff?select=role,restaurant_id&id=eq."+uid);
+  }).then(function(rows){
     var st=rows&&rows[0];
-    return !!st&&st.role==="kitchen";
+    if(!st){show("join");return}
+    if(st.role!=="kitchen"){
+      localStorage.removeItem(KEY);token=null;show("login");
+      $("err").textContent="Ye account kitchen ka nahi hai.";
+      return;
+    }
+    show("app");loadOrders();
+  }).catch(function(e){
+    if(e==="auth"){localStorage.removeItem(KEY);show("login");$("err").textContent="Session khatam. Dobara login karein."}
+    else{show("login");$("err").textContent="Network issue. Dobara try karein."}
   });
 }
-function showLogin(msg){$("app").classList.add("hidden");$("login").classList.remove("hidden");$("err").textContent=msg||""}
-function showApp(){
-  $("login").classList.add("hidden");$("app").classList.remove("hidden");
-  loadOrders();
+
+/* ---------- Login / Naya account ---------- */
+function setMode(m){
+  mode=m;
+  $("tLogin").classList.toggle("on",m==="login");
+  $("tSignup").classList.toggle("on",m==="signup");
+  $("go").textContent=m==="login"?"Login":"Account banayein";
+  $("hint").textContent=m==="login"?"Apna email aur password daalein":"Email aur password se naya account banayein, phir admin ka code daalein";
+  $("err").textContent="";
+}
+$("tLogin").onclick=function(){setMode("login")};
+$("tSignup").onclick=function(){setMode("signup")};
+
+function authPost(path,email,pw){
+  return fetch(SB_URL+"/auth/v1/"+path,{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:email,password:pw})}).then(function(r){return r.json()});
 }
 $("go").onclick=function(){
+  var email=$("em").value.trim().toLowerCase(),pw=$("pw").value;
   $("err").textContent="";
-  var email=$("em").value.trim().toLowerCase();
-  fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:email,password:$("pw").value})})
-  .then(function(r){return r.json()})
-  .then(function(d){
-    if(!d.access_token)throw "login";
-    save(d);
-    return checkKitchen();
-  })
-  .then(function(ok){
-    if(!ok){localStorage.removeItem(KEY);token=null;$("err").textContent="Ye account kitchen ka nahi hai.";return}
-    showApp();
-  })
-  .catch(function(e){$("err").textContent=(e==="login")?"Email ya password galat hai.":"Login fail hua. Dobara try karein."});
+  if(!email||!pw){$("err").textContent="Email aur password daalein.";return}
+
+  if(mode==="login"){
+    authPost("token?grant_type=password",email,pw)
+    .then(function(d){
+      if(!d.access_token)throw "login";
+      save(d);
+      return route();
+    })
+    .catch(function(e){$("err").textContent=(e==="login")?"Email ya password galat hai.":"Login fail hua. Dobara try karein."});
+  }else{
+    authPost("signup",email,pw)
+    .then(function(d){
+      if(d.access_token){save(d);return route()}
+      if(d.user||d.id){
+        setMode("login");
+        $("err").textContent="Account ban gaya. Ab isi email aur password se login karein.";
+        return;
+      }
+      throw new Error(d.msg||d.error_description||"signup");
+    })
+    .catch(function(e){$("err").textContent="Account nahi bana: "+(e.message||"dobara try karein")});
+  }
 };
+
+/* ---------- Join (admin ka code) ---------- */
+$("joinBtn").onclick=function(){
+  var code=$("jCode").value.trim().toUpperCase(),name=$("jName").value.trim();
+  $("jErr").textContent="";
+  if(!code||!name){$("jErr").textContent="Naam aur code dono daalein.";return}
+  ensureToken().then(function(){
+    return fetch(SB_URL+"/rest/v1/rpc/redeem_staff_invite",{method:"POST",headers:hdr(),body:JSON.stringify({p_code:code,p_name:name})});
+  }).then(function(r){
+    if(!r.ok)throw new Error("code");
+    return route();
+  }).catch(function(){
+    $("jErr").textContent="Code galat hai ya expire ho gaya. Admin se naya code lein.";
+  });
+};
+$("jLogout").onclick=function(){localStorage.removeItem(KEY);location.reload()};
 $("logout").onclick=function(){localStorage.removeItem(KEY);location.reload()};
 
 /* ---------- Sound ---------- */
@@ -173,7 +250,7 @@ function loadOrders(){
     $("count").textContent=rows.length+" order chal rahe hain";
     $("list").innerHTML=rows.length?rows.map(card).join(""):'<div class="empty">Abhi koi order nahi hai</div>';
   }).catch(function(e){
-    if(e==="auth"){showLogin("Session khatam. Dobara login karein.")}
+    if(e==="auth"){localStorage.removeItem(KEY);show("login");$("err").textContent="Session khatam. Dobara login karein."}
   });
 }
 function card(o){
@@ -197,10 +274,7 @@ $("list").onclick=function(e){
 
 /* ---------- Start ---------- */
 setInterval(function(){if(token&&!$("app").classList.contains("hidden"))loadOrders()},5000);
-ensureToken()
-  .then(function(){return checkKitchen()})
-  .then(function(ok){if(ok)showApp();else{localStorage.removeItem(KEY);showLogin("")}})
-  .catch(function(){showLogin("")});
+route();
 </script>
 </body>
 </html>
