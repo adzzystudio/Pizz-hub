@@ -99,13 +99,13 @@ li b{color:var(--new)}
   <main id="list"></main>
 </div>
 
-<audio id="alarm" preload="auto" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQQAAAAA"></audio>
+<audio id="alarm" preload="auto" src="new-order.mp3"></audio>
 
 <script>
 var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
 var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
 var KEY="kitchenSession";
-var token=null,uid=null,mode="login",soundOn=false,lastMax=0,firstLoad=true,actx=null;
+var token=null,uid=null,mode="login",soundOn=false,lastMax=0,firstLoad=true;
 var NEXT={"new":{to:"preparing",label:"Order banaya · Shuru karo"},"preparing":{to:"ready",label:"Done ✓"}};
 
 function $(i){return document.getElementById(i)}
@@ -222,20 +222,17 @@ $("joinBtn").onclick=function(){
 $("jLogout").onclick=function(){localStorage.removeItem(KEY);location.reload()};
 $("logout").onclick=function(){localStorage.removeItem(KEY);location.reload()};
 
-/* ---------- Sound ---------- */
+/* ---------- Sound (new-order.mp3) ---------- */
 $("soundBtn").onclick=function(){
-  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==="suspended")actx.resume()}catch(e){}
-  $("alarm").play().then(function(){$("alarm").pause();$("alarm").currentTime=0}).catch(function(){});
+  var a=$("alarm");
+  a.play().then(function(){a.pause();a.currentTime=0}).catch(function(){});
   soundOn=true;this.textContent="🔔 Sound ON hai";this.classList.add("on");
 };
 function beep(){
-  if(!soundOn||!actx)return;
-  [0,.3,.6].forEach(function(t){
-    var o=actx.createOscillator(),g=actx.createGain();
-    o.frequency.value=880;o.connect(g);g.connect(actx.destination);
-    g.gain.setValueAtTime(.3,actx.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+t+.25);
-    o.start(actx.currentTime+t);o.stop(actx.currentTime+t+.25);
-  });
+  if(!soundOn)return;
+  var a=$("alarm");
+  a.currentTime=0;
+  a.play().catch(function(){});
   if(navigator.vibrate)navigator.vibrate([300,150,300]);
 }
 
