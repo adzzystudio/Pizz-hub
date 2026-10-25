@@ -273,13 +273,16 @@ $("list").onclick=function(e){
 setInterval(function(){if(token&&!$("app").classList.contains("hidden"))loadOrders()},5000);
 route();
 
-/* ---- Demo branding via URL: ?name=Royal Spice&color=7c3aed (sirf display badalta hai, data nahi) ---- */
+/* ---- Demo branding via URL: ?name=Royal+Spice&color=7c3aed&logo=royal.png (sirf display badalta hai, data nahi) ---- */
 (function(){try{
-var p=new URLSearchParams(location.search),n=(p.get("name")||"").trim().slice(0,40),c=(p.get("color")||"").replace("#","");
+var p=new URLSearchParams(location.search),n=(p.get("name")||"").trim().slice(0,40),c=(p.get("color")||"").replace("#",""),L=(p.get("logo")||"").trim();
+var u=(/^https:\/\//.test(L)||/^\/(?!\/)/.test(L))?L:(/^[\w.-]+\.(png|jpe?g|webp|svg)$/i.test(L)?"/logos/"+L:"");
+function img(css){var i=document.createElement("img");i.src=u;i.alt="";i.style.cssText=css;i.onerror=function(){i.remove()};return i}
 if(/^[0-9a-fA-F]{6}$/.test(c)){var r=document.documentElement.style;r.setProperty("--brand","#"+c);r.setProperty("--brand-2","#"+c)}
+
 if(!n)return;
 document.title=n+" - Kitchen";
-var h=document.querySelector("#app header h2");if(h)h.textContent="Kitchen orders · "+n;
+var h=document.querySelector("#app header h2");if(h){var t=document.createElement("span");t.textContent="Kitchen orders · "+n;h.textContent="";if(u)h.appendChild(img("width:28px;height:28px;border-radius:8px;object-fit:cover;vertical-align:middle;margin-right:8px"));h.appendChild(t)}
 }catch(e){}})();
 </script>
 </body>
