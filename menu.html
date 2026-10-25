@@ -76,6 +76,16 @@ textarea{width:100%;margin-top:12px;border:1px solid var(--line);border-radius:1
   <p>Scan karo, order karo, wait mat karo</p>
   <span class="table" id="tbl"></span>
 </header>
+<script>
+/* ---- Demo branding via URL: ?table=1&name=Royal Spice&color=7c3aed (sirf display badalta hai, data nahi) ---- */
+(function(){try{
+var p=new URLSearchParams(location.search),n=(p.get("name")||"").trim().slice(0,40),c=(p.get("color")||"").replace("#","");
+if(/^[0-9a-fA-F]{6}$/.test(c))document.documentElement.style.setProperty("--brand","#"+c);
+if(!n)return;
+document.title=n+" - Menu";
+var h=document.querySelector("header h1");if(h)h.textContent=n;
+}catch(e){}})();
+</script>
 <div class="bar">
   <div class="tabs" id="tabs"></div>
   <div class="filters" id="filters"></div>

@@ -930,6 +930,17 @@ ensureToken()
   .then(function(){return checkStaff()})
   .then(function(ok){if(ok)showApp();else localStorage.removeItem(SESSION_KEY)})
   .catch(function(){});
+
+/* ---- Demo branding via URL: ?name=Royal Spice&color=7c3aed (sirf display badalta hai, data nahi) ---- */
+(function(){try{
+var p=new URLSearchParams(location.search),n=(p.get("name")||"").trim().slice(0,40),c=(p.get("color")||"").replace("#","");
+if(/^[0-9a-fA-F]{6}$/.test(c)){var r=document.documentElement.style;r.setProperty("--brand","#"+c);r.setProperty("--brand-2","#"+c)}
+if(!n)return;
+document.title=n+" - Owner Admin";
+var h=document.querySelector(".login-card h1");if(h)h.textContent=n+" Admin";
+var b=document.querySelector(".brand b");if(b)b.textContent=n;
+var l=document.querySelector(".brand .logo");if(l)l.textContent=n.split(/\s+/).slice(0,2).map(function(w){return w.charAt(0)}).join("").toUpperCase();
+}catch(e){}})();
 </script>
 </body>
 </html>

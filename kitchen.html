@@ -272,6 +272,15 @@ $("list").onclick=function(e){
 /* ---------- Start ---------- */
 setInterval(function(){if(token&&!$("app").classList.contains("hidden"))loadOrders()},5000);
 route();
+
+/* ---- Demo branding via URL: ?name=Royal Spice&color=7c3aed (sirf display badalta hai, data nahi) ---- */
+(function(){try{
+var p=new URLSearchParams(location.search),n=(p.get("name")||"").trim().slice(0,40),c=(p.get("color")||"").replace("#","");
+if(/^[0-9a-fA-F]{6}$/.test(c)){var r=document.documentElement.style;r.setProperty("--brand","#"+c);r.setProperty("--brand-2","#"+c)}
+if(!n)return;
+document.title=n+" - Kitchen";
+var h=document.querySelector("#app header h2");if(h)h.textContent="Kitchen orders · "+n;
+}catch(e){}})();
 </script>
 </body>
 </html>
