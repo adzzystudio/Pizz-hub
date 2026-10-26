@@ -204,6 +204,65 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
   .mitem .acts{grid-column:1/-1;justify-content:flex-start}
   .mitem input{width:100%}
 }
+
+/* ===== Premium theme (sirf design badalta hai, kaam same) ===== */
+:root{--brand:#5b3df5;--brand-2:#8b5cf6;--accent:#ff8a3d;--bg:#f4f3fb;--ink:#1a1640;--mute:#78739a;--line:#ece9f8;--new:#ff8a3d;--prep:#6d4cff;--ready:#16a34a;--done:#9a96b5;--bad:#dc2626;--radius:20px;--shadow:0 6px 22px rgba(80,50,200,.09);--g1:linear-gradient(135deg,var(--brand),var(--brand-2));--g2:linear-gradient(135deg,#ff8a3d,#ffb02e)}
+.login-wrap{background:radial-gradient(circle at 85% 0,rgba(255,138,61,.35),transparent 45%),linear-gradient(160deg,#0d0826,#2b1b78 60%,#5b3df5)}
+.login-card{border-radius:28px;padding:32px 26px;box-shadow:0 30px 70px rgba(0,0,0,.4)}
+.login-card h1{background:var(--g1);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:26px;font-weight:900}
+input,select{border:1.5px solid var(--line);border-radius:14px}
+input:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px rgba(109,76,255,.14)}
+.btn{background:var(--g1);border-radius:14px;box-shadow:0 6px 16px rgba(109,76,255,.28);transition:transform .1s}
+.btn:hover{background:var(--g1);filter:brightness(1.06)}
+.btn:active{transform:scale(.98)}
+.btn.accent{background:var(--g2);color:#fff;box-shadow:0 6px 16px rgba(255,138,61,.3)}
+.btn.ghost{background:#fff;color:var(--brand);box-shadow:none}
+.btn.danger{background:var(--bad);box-shadow:none}
+.sidebar{background:linear-gradient(180deg,#0d0826,#25156b)}
+.logo{background:var(--g2);color:#fff;border-radius:14px;overflow:hidden;box-shadow:0 6px 16px rgba(255,138,61,.4)}
+.logo img{width:100%;height:100%;object-fit:cover}
+.nav-btn{color:#cfc8ff;border-radius:14px}
+.nav-btn:hover{background:rgba(255,255,255,.1)}
+.nav-btn.active{background:var(--g1);color:#fff;box-shadow:0 6px 16px rgba(109,76,255,.4)}
+.nav-btn .count,.bottom .count{background:var(--g2);color:#fff}
+.topbar{background:linear-gradient(120deg,#0d0826,#2b1b78 60%,#4a2bd0);color:#fff;border:0;box-shadow:0 6px 20px rgba(43,27,120,.25)}
+.topbar .sub{color:#c9c2ff}
+.topbar-btns .btn{background:rgba(255,255,255,.16);color:#fff;box-shadow:none;border:0}
+.page.show{animation:fi .28s ease}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{border-radius:20px;padding:20px}
+.card h3{font-size:17px;font-weight:800}
+.stat{border-left:0;border-radius:20px;padding:18px;position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--g1)}
+.stat.a::before{background:var(--g2)}
+.stat.b::before{background:linear-gradient(135deg,#3b82f6,#6366f1)}
+.stat.c::before{background:linear-gradient(135deg,#22c55e,#16a34a)}
+.stat b{font-size:28px;font-weight:900;letter-spacing:-.5px}
+.ocard{border-top:0;border-radius:20px;padding:18px;position:relative;overflow:hidden}
+.ocard::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:var(--new)}
+.ocard.preparing::before{background:var(--prep)}
+.ocard.ready::before{background:var(--ready)}
+.ocard.done::before{background:var(--done)}
+.badge.new{background:#ffedd5;color:#c2410c}
+.badge.preparing{background:#e0e7ff;color:#4338ca}
+.badge.ready{background:#dcfce7;color:#15803d}
+.total{font-weight:900;color:var(--brand)}
+.chip{padding:9px 16px}
+.chip.on{background:var(--g1);border-color:transparent;box-shadow:0 4px 12px rgba(109,76,255,.35)}
+.sumrow div,.mstats div,.tb{background:#f6f4ff;border-radius:16px}
+.tb{border-left-color:var(--accent)}
+.tile{border:0;border-radius:18px;box-shadow:var(--shadow)}
+.tile.served{background:#ecfdf3}
+.tile.active{background:var(--g2);color:#fff}
+.tile.active .amt,.tile.active small{color:#fff}
+.tile.pay{background:var(--g1)}
+.modal{background:rgba(13,8,38,.55);backdrop-filter:blur(3px)}
+.mbox{border-radius:26px;box-shadow:0 30px 60px rgba(0,0,0,.35);animation:pop .2s ease}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
+.bottom{background:linear-gradient(120deg,#0d0826,#2b1b78);border-radius:22px 22px 0 0}
+.bottom button{color:#b9b0ff}
+.bottom button.active{color:#fff}
+.bottom button.active::after{background:var(--g2)}
 </style>
 </head>
 <body>
