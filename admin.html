@@ -758,7 +758,7 @@ function setRName(n){RNAME=n;document.title=n+" - Admin";var b=document.querySel
 function loadRestaurant(){
   var q=(new URLSearchParams(location.search).get("name")||"").trim();
   if(q){setRName(q.slice(0,40));return}
-  api("restaurants?select=name&limit=1").then(function(r){if(r&&r[0]&&r[0].name)setRName(r[0].name)}).catch(function(){});
+  api("restaurants?select=name&id=eq."+RESTAURANT_ID).then(function(r){if(r&&r[0]&&r[0].name)setRName(r[0].name)}).catch(function(){});
 }
 function showApp(){
   $("login").style.display="none";$("app").classList.add("show");$("bottomNav").hidden=false;
@@ -800,7 +800,7 @@ function api(path,method,body,prefer){
   }).then(function(r){
     if(r.status===401)throw "auth";
     if(!r.ok)throw new Error(r.status);
-    return method==="GET"?r.json():null;
+    return (method==="GET"||(prefer&&prefer.indexOf("representation")>-1))?r.json():null;
   }).catch(function(e){
     if(e==="auth"){showLogin("Session expired. Please log in again.");return null}
     throw e;
@@ -939,7 +939,7 @@ function exportCsv(){
 
 /* ---------- Menu ---------- */
 function loadMenu(){
-  api("menu_items?select=*&order=category,id").then(function(rows){
+  api("menu_items?select=*&archived=eq.false&order=category,id").then(function(rows){
     if(!rows)return;
     menu=rows;
     $("menuList").innerHTML=rows.length?rows.map(function(m){
@@ -992,7 +992,7 @@ $("sInvite").onclick=function(){
 
 /* ---------- Settings (shop status) ---------- */
 function loadSettings(){
-  api("settings?select=value&key=eq.shop_open").then(function(rows){
+  api("settings?select=value&key=eq.shop_open&restaurant_id=eq."+RESTAURANT_ID).then(function(rows){
     if(!rows)return;
     shopOpen=!rows.length||rows[0].value==="true";
     paintShop();
@@ -1004,10 +1004,14 @@ function paintShop(){
   $("shopBtn").className="btn "+(shopOpen?"":"accent");
 }
 function toggleShop(){
-  var next=!shopOpen;
-  api("settings?on_conflict=key","POST",[{key:"shop_open",value:String(next)}],"resolution=merge-duplicates,return=minimal")
+  var next=!shopOpen,val=String(next);
+  api("settings?restaurant_id=eq."+RESTAURANT_ID+"&key=eq.shop_open","PATCH",{value:val},"return=representation")
+  .then(function(rows){
+    if(rows&&rows.length)return;
+    return api("settings","POST",{restaurant_id:RESTAURANT_ID,key:"shop_open",value:val});
+  })
   .then(function(){shopOpen=next;paintShop()})
-  .catch(function(){alert("Save nahi hua. Dobara try karein.")});
+  .catch(function(e){alert("Save nahi hua ("+((e&&e.message)||"error")+"). Dobara try karein.")});
 }
 
 /* ---------- Clicks (ek hi jagah se sab) ---------- */
@@ -1042,7 +1046,7 @@ document.addEventListener("click",function(e){
     var m=menu.filter(function(x){return x.id==id})[0];
     api("menu_items?id=eq."+id,"PATCH",{available:!m.available}).then(loadMenu);
   }else if(id=t.dataset.del){
-    if(confirm("Permanently delete this item?"))api("menu_items?id=eq."+id,"DELETE").then(loadMenu);
+    if(confirm("Is item ko menu se hata dein? Purane orders aur reports safe rahenge."))api("menu_items?id=eq."+id,"PATCH",{archived:true}).then(loadMenu);
   }
 });
 
