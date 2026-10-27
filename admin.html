@@ -537,7 +537,7 @@ input:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0
 </div>
 
 <!-- TABLE POPUP -->
-<div class="modal" id="tmodal">
+<div class="modal" id="tmodal" role="dialog" aria-modal="true" aria-labelledby="tmTitle">
   <div class="mbox">
     <div class="mhead"><h3 id="tmTitle">Table</h3><button class="btn ghost small" data-close="1">Close</button></div>
     <div id="tmBody"></div>
@@ -620,8 +620,7 @@ function tableTiles(){
   }).join("");
 }
 function loadLive(){
-  var s=dayStart(new Date());
-  api("orders?select=*&paid=eq.false&created_at=gte."+encodeURIComponent(s.toISOString())+"&order=created_at.asc").then(function(rows){
+  api("orders?select=*&paid=eq.false&order=created_at.asc").then(function(rows){
     if(!rows)return;
     liveRows=rows;
     var maxId=rows.reduce(function(a,o){return Math.max(a,o.id)},0);
@@ -685,7 +684,8 @@ function loadReport(){
     $("rTotal").textContent=rs(total);
     $("rAvg").textContent=rs(order.length?total/order.length:0);
     var top=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a]}).slice(0,3);
-    $("rTop").innerHTML=top.length?"<b>Sabse zyada bika:</b> "+top.map(function(n){return esc(n)+" ("+counts[n]+")"}).join(" · "):"";
+    $("rTop").innerHTML=(top.length?"<b>Sabse zyada bika:</b> "+top.map(function(n){return esc(n)+" ("+counts[n]+")"}).join(" · "):"")+
+      (rows.length>=1000?'<div class="warn" style="margin-top:8px">1000 se zyada records hain. Chhota date range chunein, taaki total sahi rahe.</div>':"");
     $("rList").innerHTML=order.length?order.map(function(k){
       var g=groups[k],a=aggregate(g.orders),d=new Date(g.paid_at);
       var when=(from===to?"":ymd(d)+" · ")+hm(d);
@@ -839,10 +839,9 @@ function loadToday(){
   .then(function(rows){
     if(!rows)return;
     todayRows=rows;
-    var total=rows.filter(function(o){return o.paid}).reduce(function(a,o){return a+(Number(o.total)||0)},0);
+    loadTodaySales();
     var active=rows.filter(function(o){return o.status!=="done"});
     $("sOrders").textContent=rows.length;
-    $("sSales").textContent=rs(total);
     $("sActive").textContent=active.length;
     $("cToday").textContent=active.length;
     $("mToday").textContent=active.length;
@@ -850,6 +849,14 @@ function loadToday(){
     $("dashList").innerHTML=active.length?active.map(orderCard).join(""):'<div class="empty">No orders in progress.</div>';
     var list=todayFilter?rows.filter(function(o){return (o.status||"new")===todayFilter}):rows;
     $("todayList").innerHTML=list.length?list.slice().reverse().map(orderCard).join(""):'<div class="empty">No orders match this filter.</div>';
+  }).catch(function(){});
+}
+function loadTodaySales(){
+  var s=dayStart(new Date());
+  api("orders?select=total&paid=eq.true&paid_at=gte."+encodeURIComponent(s.toISOString())).then(function(rows){
+    if(!rows)return;
+    var total=rows.reduce(function(a,o){return a+(Number(o.total)||0)},0);
+    $("sSales").textContent=rs(total);
   }).catch(function(){});
 }
 function loadTomorrowCount(){
@@ -877,7 +884,8 @@ function orderCard(o){
     '<div class="ometa">#'+o.id+' · '+hm(when)+(o.scheduled_for?' · Pre-order '+esc(o.scheduled_for):'')+'</div>'+
     '<ul class="oitems">'+items+'</ul>'+
     (o.note?'<div class="onote">Note: '+esc(o.note)+'</div>':'')+
-    '<div class="ofoot"><span class="total">'+rs(o.total)+'</span></div>'+
+    '<div class="ofoot"><span class="total">'+rs(o.total)+'</span>'+
+    (NEXT[st]&&!o.paid?'<button class="btn small" data-next="'+o.id+'" data-st="'+NEXT[st][0]+'">'+NEXT[st][1]+'</button>':'')+'</div>'+
     '</div>';
 }
 
@@ -1039,6 +1047,7 @@ document.addEventListener("click",function(e){
 });
 
 $("tmodal").onclick=function(e){if(e.target===this)closeTable()};
+document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeTable();closeMore()}});
 
 /* ---------- Auto refresh (har 15 second) ---------- */
 setInterval(function(){
