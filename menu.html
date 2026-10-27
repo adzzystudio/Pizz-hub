@@ -89,6 +89,7 @@ document.title=n+" - Menu";
 var h=document.querySelector("header h1");if(h)h.textContent=n;
 }catch(e){}})();
 </script>
+<div id="banner" hidden style="background:#fff3e0;color:#a35f00;padding:10px 16px;font-size:15px;font-weight:600;text-align:center"></div>
 <div class="bar">
   <div class="tabs" id="tabs"></div>
   <div class="filters" id="filters"></div>
@@ -118,13 +119,21 @@ var LABEL={"new":"Order mil gaya","preparing":"Bana rahe hain 🍳","ready":"Rea
 var MENU=[],cats=["Sab"];
 var state={cat:"Sab",type:"all",cart:{},note:""};
 var table=new URLSearchParams(location.search).get("table")||"1";
+var SLUG=(new URLSearchParams(location.search).get("r")||"pizz-hub").trim().toLowerCase();
+var RID=null,SHOP_OPEN=true;
 document.getElementById("tbl").textContent="Table "+table;
 
 function rs(n){return "₹"+n}
 function $(id){return document.getElementById(id)}
 function rpc(name,body){
   return fetch(SB_URL+"/rest/v1/rpc/"+name,{method:"POST",headers:HDR,body:JSON.stringify(body)})
-    .then(function(r){if(!r.ok)throw new Error(r.status);return r.json()});
+    .then(function(r){
+      if(r.ok)return r.json();
+      return r.text().then(function(t){
+        var m="";try{m=JSON.parse(t).message||""}catch(x){}
+        throw new Error(m||String(r.status));
+      });
+    });
 }
 
 function renderBar(){
@@ -169,17 +178,23 @@ function renderCart(){
   $("panel").innerHTML='<h2>Aapka order · Table '+table+'</h2>'+rows+
    '<textarea id="note" rows="2" placeholder="Koi khaas baat? (jaise: kam teekha)">'+state.note.replace(/</g,"&lt;")+'</textarea>'+
    '<div class="total"><span>Total</span><span>'+rs(s.t)+'</span></div>'+
-   '<button class="place" id="place">Order bhejo</button>';
+   '<button class="place" id="place"'+(SHOP_OPEN?'':' disabled')+'>'+(SHOP_OPEN?'Order bhejo':'Shop abhi band hai')+'</button>';
   $("note").oninput=function(e){state.note=e.target.value};
   $("place").onclick=placeOrder;
+}
+
+function friendlyErr(m){
+  if(m==="shop_closed")return "Abhi shop band hai. Thodi der baad try karein.";
+  if(m==="item_unavailable")return "Kuch item ab available nahi hain. Cart update karke dobara try karein.";
+  return "Order nahi gaya. Internet check karke dobara dabayein.";
 }
 
 /* ---------- Order bhejna (server function se, ID milta hai) ---------- */
 function placeOrder(){
   unlockAudio();
   var btn=$("place");btn.disabled=true;btn.textContent="Bhej rahe hain...";
-  var items=MENU.filter(function(m){return state.cart[m.id]}).map(function(m){return {name:m.name,qty:state.cart[m.id],price:m.price}});
-  rpc("place_order",{p_table:String(table),p_note:state.note,p_total:totals().t,p_items:items})
+  var items=MENU.filter(function(m){return state.cart[m.id]}).map(function(m){return {id:m.id,qty:state.cart[m.id]}});
+  rpc("place_order",{p_restaurant_id:RID,p_table:String(table),p_note:state.note,p_items:items})
   .then(function(orderId){
     saveMyOrder(orderId);
     lastStatus[orderId]="new";
@@ -189,9 +204,9 @@ function placeOrder(){
     $("again").onclick=closeSheet;
     state.cart={};state.note="";refresh();
     pollStatus();
-  }).catch(function(){
+  }).catch(function(e){
     btn.disabled=false;btn.textContent="Order bhejo";
-    alert("Order nahi gaya. Internet check karke dobara dabayein.");
+    alert(friendlyErr(e&&e.message));
   });
 }
 
@@ -286,14 +301,41 @@ document.addEventListener("click",function(e){
 });
 $("cartbar").onclick=openSheet;
 $("list").innerHTML='<div class="empty">Menu load ho raha hai...</div>';
-fetch(SB_URL+"/rest/v1/menu_items?select=*&available=eq.true&order=id",{headers:HDR})
-.then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
-.then(function(rows){
-  MENU=rows.map(function(m){return {id:m.id,cat:m.category,name:m.name,desc:m.description||"",price:m.price,veg:m.veg,icon:ICONS[m.category]||"🍽️"}});
-  cats=["Sab"].concat(MENU.map(function(m){return m.cat}).filter(function(c,i,a){return a.indexOf(c)===i}));
-  renderBar();refresh();
-}).catch(function(){
-  $("list").innerHTML='<div class="empty">Menu load nahi ho paya. Page dobara kholein.</div>';
+function loadRestaurant(){
+  return fetch(SB_URL+"/rest/v1/restaurants?select=id,name&slug=eq."+encodeURIComponent(SLUG),{headers:HDR})
+  .then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
+  .then(function(rows){
+    if(!rows.length)throw new Error("no_restaurant");
+    RID=rows[0].id;
+    if(!new URLSearchParams(location.search).get("name")&&rows[0].name){
+      document.title=rows[0].name+" - Menu";
+      var h=document.querySelector("header h1");if(h)h.textContent=rows[0].name;
+    }
+  });
+}
+function loadShop(){
+  return fetch(SB_URL+"/rest/v1/settings?select=value&key=eq.shop_open&restaurant_id=eq."+RID,{headers:HDR})
+  .then(function(r){return r.ok?r.json():[]})
+  .then(function(rows){
+    SHOP_OPEN=!rows.length||rows[0].value==="true";
+    $("banner").hidden=SHOP_OPEN;
+    if(!SHOP_OPEN)$("banner").textContent="Abhi shop band hai. Aap menu dekh sakte hain, order abhi nahi ho sakta.";
+  }).catch(function(){});
+}
+function loadMenuItems(){
+  return fetch(SB_URL+"/rest/v1/menu_items?select=*&restaurant_id=eq."+RID+"&available=eq.true&archived=eq.false&order=id",{headers:HDR})
+  .then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
+  .then(function(rows){
+    MENU=rows.map(function(m){return {id:m.id,cat:m.category,name:m.name,desc:m.description||"",price:m.price,veg:m.veg,icon:ICONS[m.category]||"🍽️"}});
+    cats=["Sab"].concat(MENU.map(function(m){return m.cat}).filter(function(c,i,a){return a.indexOf(c)===i}));
+    renderBar();refresh();
+  });
+}
+loadRestaurant()
+.then(function(){return Promise.all([loadMenuItems(),loadShop()])})
+.catch(function(e){
+  $("cartbar").hidden=true;
+  $("list").innerHTML='<div class="empty">'+(e.message==="no_restaurant"?"Ye restaurant nahi mila. QR code dobara scan karein.":"Menu load nahi ho paya. Page dobara kholein.")+'</div>';
 });
 
 pollStatus();
