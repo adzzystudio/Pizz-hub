@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="hi">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pizza Hub - Kitchen</title>
-<style>
+ <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pizza Hub - Kitchen</title>
+  <style>
 :root{--bg:#0f1716;--card:#18221f;--ink:#e8efed;--mute:#93a39e;--line:#2a3733;--new:#f2a33a;--prep:#3b82f6;--brand:#0f4c45;--ok:#1f9d55;--bad:#c0392b}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:17px;min-height:100vh}
@@ -52,56 +52,49 @@ li b{color:var(--new)}
 .act:disabled{opacity:.5}
 .empty{grid-column:1/-1;text-align:center;color:var(--mute);padding:60px 10px;font-size:18px}
 </style>
-</head>
-<body>
-
-<!-- LOGIN / SIGNUP -->
-<div class="login" id="login">
-  <div class="lbox">
+ </head>
+ <body>
+  <!-- LOGIN / SIGNUP -->
+  <div class="login" id="login">
+   <div class="lbox">
     <h1>Kitchen</h1>
     <div class="tabs">
-      <button id="tLogin" class="on">Login</button>
-      <button id="tSignup">Naya account</button>
+     <button id="tLogin" class="on">Login</button>
+     <button id="tSignup">Naya account</button>
     </div>
     <p class="hint" id="hint">Apna email aur password daalein</p>
-    <input id="em" type="email" placeholder="Email" autocomplete="username">
-    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <input id="em" type="email" placeholder="Email" autocomplete="username"> <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
     <div class="err" id="err"></div>
     <button id="go">Login</button>
+   </div>
   </div>
-</div>
-
-<!-- JOIN (naye staff ke liye, admin ka code) -->
-<div class="login hidden" id="join">
-  <div class="lbox">
+  <!-- JOIN (naye staff ke liye, admin ka code) -->
+  <div class="login hidden" id="join">
+   <div class="lbox">
     <h1>Restaurant se judein</h1>
     <p class="hint">Admin se mila 8-character code daalein.</p>
-    <input id="jName" placeholder="Aapka naam">
-    <input id="jCode" placeholder="Invite code (jaise 22FFA818)" autocapitalize="characters">
+    <input id="jName" placeholder="Aapka naam"> <input id="jCode" placeholder="Invite code (jaise 22FFA818)" autocapitalize="characters">
     <div class="err" id="jErr"></div>
     <button id="joinBtn">Join karein</button>
     <button class="linkbtn" id="jLogout">Logout</button>
+   </div>
   </div>
-</div>
-
-<!-- KITCHEN -->
-<div id="app" class="hidden">
-  <header>
+  <!-- KITCHEN -->
+  <div id="app" class="hidden">
+   <header>
     <div>
-      <h2>Kitchen orders</h2>
-      <small id="count">Loading...</small>
+     <h2>Kitchen orders</h2>
+     <small id="count">Loading...</small>
     </div>
     <div class="hbtns">
-      <button id="soundBtn">🔔 Sound ON karein</button>
-      <button id="logout">Logout</button>
+     <button id="soundBtn">🔔 Sound ON karein</button>
+     <button id="logout">Logout</button>
     </div>
-  </header>
-  <main id="list"></main>
-</div>
-
-<audio id="alarm" preload="auto" src="new-order.mp3"></audio>
-
-<script>
+   </header>
+   <main id="list"></main>
+  </div>
+  <audio id="alarm" preload="auto" src="new-order.mp3"></audio>
+  <script>
 var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
 var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
 var KEY="kitchenSession";
@@ -219,8 +212,14 @@ $("joinBtn").onclick=function(){
     $("jErr").textContent="Code galat hai ya expire ho gaya. Admin se naya code lein.";
   });
 };
-$("jLogout").onclick=function(){localStorage.removeItem(KEY);location.reload()};
-$("logout").onclick=function(){localStorage.removeItem(KEY);location.reload()};
+function serverLogout(){
+  var t=token;token=null;
+  var done=function(){localStorage.removeItem(KEY);location.reload()};
+  if(!t)return done();
+  fetch(SB_URL+"/auth/v1/logout",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+t}}).then(done,done);
+}
+$("jLogout").onclick=serverLogout;
+$("logout").onclick=serverLogout;
 
 /* ---------- Sound (new-order.mp3) ---------- */
 $("soundBtn").onclick=function(){
@@ -285,5 +284,5 @@ document.title=n+" - Kitchen";
 var h=document.querySelector("#app header h2");if(h){var t=document.createElement("span");t.textContent="Kitchen orders · "+n;h.textContent="";if(u)h.appendChild(img("width:28px;height:28px;border-radius:8px;object-fit:cover;vertical-align:middle;margin-right:8px"));h.appendChild(t)}
 }catch(e){}})();
 </script>
-</body>
+ </body>
 </html>
