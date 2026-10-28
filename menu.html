@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pizza Hub - Menu</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
-<style>
+ <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pizza Hub - Menu</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&amp;display=swap">
+  <style>
 :root{--bg:#f4f7f6;--card:#fff;--ink:#1b2523;--mute:#66736f;--brand:#0f4c45;--accent:#f2a33a;--line:#dfe6e3;--veg:#1f9d55;--nv:#c0392b;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}
@@ -44,6 +44,8 @@ main{padding:12px 16px;max-width:640px;margin:0 auto}
 .qty button{background:none;border:0;color:inherit;width:32px;height:32px;font-size:18px}
 .qty span{min-width:20px;text-align:center;font-weight:600}
 .cartbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));background:var(--brand);color:#fff;border:0;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;font-weight:600;font-size:16px;max-width:616px;margin:0 auto}
+.cartbar[hidden]{display:none}
+.place:disabled{opacity:.55;cursor:not-allowed}
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;z-index:20}
 .sheet.open{display:flex}
 .panel{background:var(--card);width:100%;max-width:640px;margin:0 auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:85%;overflow:auto}
@@ -98,14 +100,14 @@ header p{opacity:.9;font-size:15px}
 .notify{background:linear-gradient(160deg,var(--brand),var(--b2))}
 .notify button{background:linear-gradient(135deg,#ff8a3d,#ffb02e);color:#fff}
 </style>
-</head>
-<body>
-<header>
-  <h1>Pizza Hub</h1>
-  <p>Scan. Order. Enjoy.</p>
-  <span class="table" id="tbl"></span>
-</header>
-<script>
+ </head>
+ <body>
+  <header>
+   <h1>Pizza Hub</h1>
+   <p>Scan. Order. Enjoy.</p>
+   <span class="table" id="tbl"></span>
+  </header>
+  <script>
 /* ---- Demo branding via URL: ?name=Royal+Spice&color=7c3aed&logo=royal.png (changes the display only, not the data) ---- */
 (function(){try{
 var p=new URLSearchParams(location.search),n=(p.get("name")||"").trim().slice(0,40),c=(p.get("color")||"").replace("#",""),L=(p.get("logo")||"").trim();
@@ -118,27 +120,26 @@ document.title=n+" - Menu";
 var h=document.querySelector("header h1");if(h)h.textContent=n;
 }catch(e){}})();
 </script>
-<div class="bar">
-  <input id="q" type="search" placeholder="Search dishes…" autocomplete="off">
-  <div class="tabs" id="tabs"></div>
-  <div class="filters" id="filters"></div>
-</div>
-<div class="mystat" id="mystat"></div>
-<main id="list"></main>
-<button class="cartbar" id="cartbar" hidden></button>
-
-<div class="sheet" id="sheet"><div class="panel" id="panel"></div></div>
-
-<div class="notify" id="notify">
-  <div class="nbox">
+  <div class="bar">
+   <input id="q" type="search" placeholder="Search dishes…" autocomplete="off">
+   <div class="tabs" id="tabs"></div>
+   <div class="filters" id="filters"></div>
+  </div>
+  <div class="mystat" id="mystat"></div>
+  <main id="list"></main>
+  <button class="cartbar" id="cartbar" hidden></button>
+  <div class="sheet" id="sheet">
+   <div class="panel" id="panel"></div>
+  </div>
+  <div class="notify" id="notify">
+   <div class="nbox">
     <div class="nbig" id="nIcon"></div>
     <h2 id="nTitle"></h2>
     <p id="nText"></p>
     <button id="nOk">Got it</button>
+   </div>
   </div>
-</div>
-
-<script>
+  <script>
 // ---- SUPABASE SETTINGS ----
 var SB_URL="https://pzlmykxqqtilvijntbpa.supabase.co";
 var SB_KEY="sb_publishable_cr9IO17p6TI0jyEi-RDrtQ_FGH29SGh";
@@ -150,6 +151,7 @@ var state={cat:"All",type:"all",cart:{},note:"",q:""};
 var table=new URLSearchParams(location.search).get("table")||"1";
 document.getElementById("tbl").textContent="Table "+table;
 
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function rs(n){return "₹"+n}
 function $(id){return document.getElementById(id)}
 function rpc(name,body){
@@ -173,7 +175,7 @@ function renderList(){
     var q=state.cart[m.id]||0;
     var ctl=q?'<div class="qty"><button data-dec="'+m.id+'" aria-label="Decrease">−</button><span>'+q+'</span><button data-inc="'+m.id+'" aria-label="Increase">+</button></div>'
               :'<button class="add" data-inc="'+m.id+'">Add</button>';
-    return '<div class="item"><div class="pic">'+m.icon+'</div><div class="info"><div class="name"><span class="dot'+(m.veg?'':' nv')+'"></span>'+m.name+'</div><div class="desc">'+m.desc+'</div><div class="row"><span class="price">'+rs(m.price)+'</span>'+ctl+'</div></div></div>';
+    return '<div class="item"><div class="pic">'+m.icon+'</div><div class="info"><div class="name"><span class="dot'+(m.veg?'':' nv')+'"></span>'+esc(m.name)+'</div><div class="desc">'+esc(m.desc)+'</div><div class="row"><span class="price">'+rs(m.price)+'</span>'+ctl+'</div></div></div>';
   }).join(""):'<div class="empty">No items found.</div>';
 }
 function totals(){
@@ -197,7 +199,7 @@ function renderCart(){
   var s=totals();
   if(!s.n){closeSheet();return}
   var rows=MENU.filter(function(m){return state.cart[m.id]}).map(function(m){
-    return '<div class="line"><span>'+m.name+'</span><span class="qty"><button data-dec="'+m.id+'">−</button><span>'+state.cart[m.id]+'</span><button data-inc="'+m.id+'">+</button></span><b>'+rs(m.price*state.cart[m.id])+'</b></div>';
+    return '<div class="line"><span>'+esc(m.name)+'</span><span class="qty"><button data-dec="'+m.id+'">−</button><span>'+state.cart[m.id]+'</span><button data-inc="'+m.id+'">+</button></span><b>'+rs(m.price*state.cart[m.id])+'</b></div>';
   }).join("");
   $("panel").innerHTML='<h2>Your order · Table '+table+'</h2>'+rows+
    '<textarea id="note" rows="2" placeholder="Any special request? (e.g. less spicy)">'+state.note.replace(/</g,"&lt;")+'</textarea>'+
@@ -349,5 +351,5 @@ fetch(SB_URL+"/rest/v1/restaurants?select=id,name,brand_color,logo_url&slug=eq."
 pollStatus();
 setInterval(pollStatus,5000);
 </script>
-</body>
+ </body>
 </html>
