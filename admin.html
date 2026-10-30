@@ -615,8 +615,7 @@ function tableTiles(){
     if(!list.length)return '<button class="tile" data-tbl="'+esc(k)+'"><b>Table '+esc(k)+'</b><span class="amt">—</span><small>Empty</small></button>';
     var pending=list.filter(function(o){return (o.status||"new")!=="done"}).length;
     var sum=list.reduce(function(a,o){return a+(Number(o.total)||0)},0);
-    var cooking=list.some(function(o){return o.status==="new"||o.status==="preparing"||!o.status});
-    var cls=cooking?"active":(pending?"ready":"pay");
+    var cls=pending?"active":"pay";
     var sub=pending?pending+" in progress":"Payment due";
     return '<button class="tile '+cls+'" data-tbl="'+esc(k)+'"><b>Table '+esc(k)+'</b><span class="amt">'+rs(sum)+'</span><small>'+sub+'</small></button>';
   }).join("");
